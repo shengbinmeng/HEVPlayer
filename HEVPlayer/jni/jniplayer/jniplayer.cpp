@@ -8,8 +8,10 @@
 extern "C"{
 #include "utils/utils.h"
 }
+#include <pthread.h>
 
 #define TAG "jniplayer"
+#define HAVE_NEON 1
 
 struct fields_t {
     jmethodID	drawFrame;
@@ -33,16 +35,28 @@ struct MediaInfo
 static fields_t fields;
 
 static JNIEnv *gEnv = NULL;
+static JNIEnv *gEnvLocal = NULL;
+
 static jclass gClass = NULL;
 static VideoFrame *gVF = NULL;
 static MediaInfo media;
 static VideoFrame frame;
+
+pthread_t decode_thread;
 
 
 static const char* const kClassPathName = "pku/shengbin/hevplayer/NativeMediaPlayer";
 
 
 typedef unsigned char PEL;
+
+double getms()
+{
+	struct timeval pTime;
+	gettimeofday(&pTime, NULL);
+	double t2 = ((double)pTime.tv_usec / 1000.0);
+	return t2;
+}
 
 void *align_malloc( int i_size )
 {
@@ -194,7 +208,8 @@ void outputFrame(PEL *buffer[3], int frame_size, int width, int stride[3], FILE 
 int drawFrame(VideoFrame* vf)
 {
     gVF = vf;
-    return gEnv->CallIntMethod(gClass, fields.drawFrame, media.width, media.height);
+	if (gEnvLocal == NULL) gEnvLocal = getJNIEnv();
+    return gEnvLocal->CallStaticIntMethod(gClass, fields.drawFrame, media.width, media.height);
 }
 
 static int
@@ -211,22 +226,20 @@ MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path)
 static int
 MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber)
 {
-	media.height = 352;
-	media.width = 288;
+	media.height = 720;
+	media.width = 1280;
 	frame.height = media.height;
 	frame.width = media.width;
 
 	return 0;
 }
 
-static int
-MediaPlayer_start(JNIEnv *env, jobject thiz)
-{
-	#define OUTPUTYUV
 
+void* decode(void *p)
+{
 	DecodeCore decoder;
 	long framesGot=0,bytesUsed;
-	decoder.Set_Thread(1);
+	decoder.Set_Thread(4);
 
 	decoder.StartDecoder(91);
 
@@ -239,7 +252,7 @@ MediaPlayer_start(JNIEnv *env, jobject thiz)
 	in=fopen(media.data_src,"rb");
 	if(!in) {
 		lent_log(NULL, LENT_LOG_ERROR, "can not open input file '%s'!\n", media.data_src);
-		return -1;
+		return NULL;
 	}
 	remainLen=fread(bitstream,1,1024*1024*100,in);
 	fclose(in);
@@ -258,7 +271,7 @@ MediaPlayer_start(JNIEnv *env, jobject thiz)
 		if ( NULL == fout ) {
 			lent_log(NULL, LENT_LOG_ERROR, "can not create output file '%s'!\n", out_file);
 		    __android_log_print(ANDROID_LOG_ERROR, TAG, "can not create output file '%s'!\n", out_file);
-			return -1;
+			return NULL;
 		}
 	#endif
 
@@ -270,7 +283,7 @@ MediaPlayer_start(JNIEnv *env, jobject thiz)
 
 	while(AUStart[i+1])
 	{
-	    __android_log_print(ANDROID_LOG_INFO, TAG, "enter loop: i = %d", i);
+		__android_log_print(ANDROID_LOG_DEBUG, TAG, "before decode a frame: %.3f", getms());
 
 		bytesUsed=AUStart[i+1]-AUStart[i];
 		decoder.DecodeFrame(bitstream+AUStart[i],OutputYUV,&bytesUsed,NULL,&width,stride);
@@ -297,6 +310,8 @@ MediaPlayer_start(JNIEnv *env, jobject thiz)
 				outputFrame(OutputYUV,bytesUsed,width,stride,fout);
 			}
 #endif
+			__android_log_print(ANDROID_LOG_DEBUG, TAG, "after render this frame: %.3f", getms());
+
 		}
 		else
 		{
@@ -346,6 +361,16 @@ MediaPlayer_start(JNIEnv *env, jobject thiz)
 	//align_free(buffer);
 	//getchar();
 	decoder.UninitDecoder();
+
+	detachJVM();
+}
+
+static int
+MediaPlayer_start(JNIEnv *env, jobject thiz)
+{
+
+	__android_log_print(ANDROID_LOG_INFO, TAG, "start decoding thread");
+	pthread_create(&decode_thread, NULL, decode, NULL);
 }
 
 static int
@@ -422,7 +447,7 @@ static void MediaPlayer_native_init(JNIEnv *env)
         return;
     }
 
-	fields.drawFrame = env->GetMethodID(clazz, "drawFrame","(II)I");
+	fields.drawFrame = env->GetStaticMethodID(clazz, "drawFrame","(II)I");
 	if (fields.drawFrame == NULL) {
 		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.drawFrame");
 		return;
@@ -458,7 +483,7 @@ MediaPlayer_renderBitmap(JNIEnv *env, jobject  obj, jobject bitmap)
 	}
 
 	// Convert the image from its native format to RGB565
-	//__android_log_print(ANDROID_LOG_DEBUG, TAG, "before scale: %.3f", getms());
+	__android_log_print(ANDROID_LOG_DEBUG, TAG, "before scale: %.3f", getms());
 #if HAVE_NEON
 	//__android_log_print(ANDROID_LOG_DEBUG, TAG, "scale with neon");
 	ConvertYCbCrToRGB565_neon(	gVF->yuv_data[0],
@@ -483,7 +508,7 @@ MediaPlayer_renderBitmap(JNIEnv *env, jobject  obj, jobject bitmap)
 								gVF->width * 2,
 								420  );
 #endif
-	//__android_log_print(ANDROID_LOG_DEBUG, TAG, "after scale: %.3f", getms());
+	__android_log_print(ANDROID_LOG_DEBUG, TAG, "after scale: %.3f", getms());
 
 	AndroidBitmap_unlockPixels(env, bitmap);
 }

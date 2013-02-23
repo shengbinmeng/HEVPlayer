@@ -13,6 +13,3 @@ LOCAL_MODULE := cpufeature
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-module,android/cpufeatures)
-
-
-

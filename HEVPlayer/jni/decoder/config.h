@@ -17,6 +17,7 @@
 
 //architech
 #define ARCH_X86_32				0
+#define LITTLE_ENDIAN			1
 
 //threading
 #define HAVE_PTHREADS			1

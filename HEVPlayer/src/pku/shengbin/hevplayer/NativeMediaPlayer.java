@@ -24,12 +24,15 @@ public class NativeMediaPlayer {
 
 	private int mNativeContext; // accessed by native methods
     private Activity mOwnerActivity;
-    private Surface mSurface;
-    private Bitmap mFrameBitmap;
-    private	int mDisplayWidth = 0, mDisplayHeight = 0;   
-    private	int	mDisplayFPS = -1, mDecodeFPS = -1;
-    private int	mBitrateVideo = -1, mBitrateAudio = -1; 
-    private boolean mShowInfo = false;
+    private static Surface mSurface;
+    private static Bitmap mFrameBitmap;
+    private static	int mDisplayWidth = 0;
+	private static int mDisplayHeight = 0;   
+    private static	int	mDisplayFPS = -1;
+	private static int mDecodeFPS = -1;
+    private static int	mBitrateVideo = -1;
+	private static int mBitrateAudio = -1; 
+    private static boolean mShowInfo = true;
     
     private native final void native_init();
     private native final void native_setup(Object mediaplayer_this);
@@ -115,9 +118,9 @@ public class NativeMediaPlayer {
     	mShowInfo = show;
     }
 	
-	private native void renderBitmap(Bitmap  bitmap);
+	private native static void renderBitmap(Bitmap  bitmap);
 	
-	public int drawFrame(int width, int height) {
+	public static int drawFrame(int width, int height) {
 		Canvas canvas = null;
 		try {
 			canvas = mSurface.lockCanvas(null);
@@ -170,7 +173,7 @@ public class NativeMediaPlayer {
 				info += "Bitrate: video " + Integer.toString(mBitrateVideo);
 			if (mBitrateAudio > 0)
 				info += ", audio " + Integer.toString(mBitrateAudio);
-			info += ", total " + Integer.toString(mBitrateVideo + mBitrateAudio) + " kbit/s";
+			if (mBitrateVideo > 0 || mBitrateAudio > 0) info += ", total " + Integer.toString(mBitrateVideo + mBitrateAudio) + " kbit/s";
 			canvas.drawText(info, 20, 100, paint);
 		}
 
