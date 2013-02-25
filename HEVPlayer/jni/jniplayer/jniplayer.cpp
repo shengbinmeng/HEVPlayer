@@ -12,9 +12,11 @@ extern "C"{
 
 #define TAG "jniplayer"
 #define HAVE_NEON 1
+#define FPS_DEBUGGING 1
 
 struct fields_t {
     jmethodID	drawFrame;
+    jmethodID   postEvent;
 };
 struct VideoFrame
 {
@@ -205,37 +207,37 @@ void outputFrame(PEL *buffer[3], int frame_size, int width, int stride[3], FILE 
 }
 
 
+
+void postEvent(int msg, int ext1, int ext2)
+{
+	JNIEnv *env = getJNIEnv();
+    env->CallStaticVoidMethod(gClass, fields.postEvent, msg, ext1, ext2, 0);
+}
+
 int drawFrame(VideoFrame* vf)
 {
+	{
+		timeval pTime;
+		static int frames = 0;
+		static double t1 = 0;
+		static double t2 = 0;
+		gettimeofday(&pTime, NULL);
+		t2 = pTime.tv_sec + (pTime.tv_usec / 1000000.0);
+		if (t2 > t1 + 1) {
+			if(FPS_DEBUGGING) __android_log_print(ANDROID_LOG_INFO, TAG, "Video Display FPS:%i", (int)frames);
+			postEvent(900, int(frames), 0);
+			t1 = t2;
+			frames = 0;
+		}
+		frames++;
+	}
+
     gVF = vf;
 	if (gEnvLocal == NULL) gEnvLocal = getJNIEnv();
     return gEnvLocal->CallStaticIntMethod(gClass, fields.drawFrame, media.width, media.height);
 }
 
-static int
-MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path)
-{
-    const char *pathStr = env->GetStringUTFChars(path, NULL);
-    strcpy(media.data_src, pathStr);
-    // Make sure that local ref is released before a potential exception
-    env->ReleaseStringUTFChars(path, pathStr);
-
-    return 0;
-}
-
-static int
-MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber)
-{
-	media.height = 720;
-	media.width = 1280;
-	frame.height = media.height;
-	frame.width = media.width;
-
-	return 0;
-}
-
-
-void* decode(void *p)
+void* runDecoder(void *p)
 {
 	DecodeCore decoder;
 	long framesGot=0,bytesUsed;
@@ -283,12 +285,10 @@ void* decode(void *p)
 
 	while(AUStart[i+1])
 	{
-		__android_log_print(ANDROID_LOG_DEBUG, TAG, "before decode a frame: %.3f", getms());
-
+		__android_log_print(ANDROID_LOG_DEBUG, TAG, "before decode a frame: %.3f *****", getms());
 		bytesUsed=AUStart[i+1]-AUStart[i];
 		decoder.DecodeFrame(bitstream+AUStart[i],OutputYUV,&bytesUsed,NULL,&width,stride);
 	    __android_log_print(ANDROID_LOG_INFO, TAG, "DecodeFrame returned\n");
-
 		if(bytesUsed)
 		{
 			lent_dlog(NULL,"decoded a picture: %d\n",count);
@@ -310,7 +310,23 @@ void* decode(void *p)
 				outputFrame(OutputYUV,bytesUsed,width,stride,fout);
 			}
 #endif
-			__android_log_print(ANDROID_LOG_DEBUG, TAG, "after render this frame: %.3f", getms());
+			{
+				timeval pTime;
+				static int frames = 0;
+				static double t1 = 0;
+				static double t2 = 0;
+
+				gettimeofday(&pTime, NULL);
+				t2 = pTime.tv_sec + (pTime.tv_usec / 1000000.0);
+				if (t2 > t1 + 1) {
+					if(FPS_DEBUGGING) __android_log_print(ANDROID_LOG_INFO, TAG, "Video Decode FPS:%i", int(frames));
+					postEvent(903, int(frames), 0);
+					t1 = t2;
+					frames = 0;
+				}
+				frames++;
+			}
+			__android_log_print(ANDROID_LOG_DEBUG, TAG, "after render this frame: %.3f *****", getms());
 
 		}
 		else
@@ -365,12 +381,35 @@ void* decode(void *p)
 	detachJVM();
 }
 
+
+static int
+MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path)
+{
+    const char *pathStr = env->GetStringUTFChars(path, NULL);
+    strcpy(media.data_src, pathStr);
+    // Make sure that local ref is released before a potential exception
+    env->ReleaseStringUTFChars(path, pathStr);
+
+    return 0;
+}
+
+static int
+MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber)
+{
+	media.height = 720;
+	media.width = 1280;
+	frame.height = media.height;
+	frame.width = media.width;
+
+	return 0;
+}
+
 static int
 MediaPlayer_start(JNIEnv *env, jobject thiz)
 {
 
 	__android_log_print(ANDROID_LOG_INFO, TAG, "start decoding thread");
-	pthread_create(&decode_thread, NULL, decode, NULL);
+	pthread_create(&decode_thread, NULL, runDecoder, NULL);
 }
 
 static int
@@ -447,6 +486,12 @@ static void MediaPlayer_native_init(JNIEnv *env)
         return;
     }
 
+    fields.postEvent = env->GetStaticMethodID(clazz, "postEventFromNative", "(III)V");
+	if (fields.postEvent == NULL) {
+		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.postEventFromNative");
+		return;
+	}
+
 	fields.drawFrame = env->GetStaticMethodID(clazz, "drawFrame","(II)I");
 	if (fields.drawFrame == NULL) {
 		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.drawFrame");
@@ -456,6 +501,7 @@ static void MediaPlayer_native_init(JNIEnv *env)
 	gClass = NULL;
 	gEnv = NULL;
 	gVF = NULL;
+	gEnvLocal = NULL;
 }
 
 static void

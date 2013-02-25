@@ -10,7 +10,7 @@ LOCAL_SRC_FILES := jniplayer.cpp jniUtils.cpp yuv2rgb565.cpp ../decoder/interfac
 
 LOCAL_LDLIBS := -llog -lz -ljnigraphics
 
-LOCAL_WHOLE_STATIC_LIBRARIES := decoder-prebuilt
+LOCAL_STATIC_LIBRARIES := lentoid-dec
 
 LOCAL_MODULE := jniplayer
 

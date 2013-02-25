@@ -14,9 +14,7 @@ import android.view.WindowManager;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
 
-public class PlayActivity extends Activity implements SurfaceHolder.Callback, MediaPlayerControl {
-	private static final String 	TAG = "PlayActivity";
-	
+public class PlayActivity extends Activity implements SurfaceHolder.Callback, MediaPlayerControl {	
 	private NativeMediaPlayer			mPlayer;
 	private SurfaceView 			mSurfaceView;
 	private MediaController			mMediaController;

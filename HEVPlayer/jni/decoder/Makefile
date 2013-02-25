@@ -32,7 +32,7 @@ OBJS += $(SRCS:%.c=%.o)
 default:lib-static
 
 lib-static:$(OBJS)
-	$(AR) crv libdecoder.a $(OBJS)
+	$(AR) crv liblentoid-dec.a $(OBJS)
 
 .PHONY: clean
 clean:

@@ -16,11 +16,6 @@ public class NativeMediaPlayer {
     public static final int MEDIA_INFO_FRAMERATE_AUDIO = 901;
     public static final int MEDIA_INFO_BYTERATE = 902;
     public static final int MEDIA_INFO_DECODE_FPS = 903;
-    public static final int MEDIA_INFO_MAXQSID = 904;
-    public static final int MEDIA_INFO_MAXTID = 905;
-    public static final int MEDIA_INFO_DECODE_SLOW = 906;
-    public static final int MEDIA_INFO_BUFFERING = 907;
-    
 
 	private int mNativeContext; // accessed by native methods
     private Activity mOwnerActivity;
@@ -181,5 +176,30 @@ public class NativeMediaPlayer {
         
         return 0;
 	}
+	
+	/**
+     * Called from native code when an interesting event happens.  This method
+     * just uses the EventHandler system to post the event back to the main app thread.
+     * We use a weak reference to the original MediaPlayer object so that the native
+     * code is safe from the object disappearing from underneath it.  (This is
+     * the cookie passed to native_setup().)
+     */
+	public static void postEventFromNative(
+                          int what, int arg1, int arg2) {
+    	switch(what) {
+    	case MEDIA_INFO_FRAMERATE_VIDEO:
+    		mDisplayFPS = arg1;
+    		break;
+    	case MEDIA_INFO_FRAMERATE_AUDIO:
+    		break;
+    	case MEDIA_INFO_BYTERATE:
+    		mBitrateVideo = arg1;
+    		mBitrateAudio = arg2;
+    		break;
+    	case MEDIA_INFO_DECODE_FPS:
+    		mDecodeFPS = arg1;
+    		break;
+    	}
+    }
 
 }

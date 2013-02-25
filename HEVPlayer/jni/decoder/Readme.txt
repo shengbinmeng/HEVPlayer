@@ -1,3 +1,10 @@
+two build methods: 
+1. GNU make (using the Makefile)
+2. Android ndk-build (using the Android.mk)
+
+
+######################
+Change Log:
 utils/attributes.h:16
 _inline -> __inline
 
