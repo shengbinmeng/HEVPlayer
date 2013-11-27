@@ -7,6 +7,7 @@
 static JavaVM *sVm;
 
 extern int register_jniplayer(JNIEnv *env);
+extern int register_renderer(JNIEnv *env);
 
 /*
  * Throw an exception with the specified class and an optional message.
@@ -60,8 +61,8 @@ void detachJVM()
 	int ret;
 	ret=sVm->DetachCurrentThread();
 	if (ret == JNI_OK)
-		__android_log_print(ANDROID_LOG_DEBUG,TAG,"detach return OK: %d", ret);
-	else __android_log_print(ANDROID_LOG_DEBUG,TAG,"detach return: %d", ret);
+		__android_log_print(ANDROID_LOG_INFO,TAG,"detach return OK: %d", ret);
+	else __android_log_print(ANDROID_LOG_ERROR,TAG,"detach return: %d", ret);
 }
 
 
@@ -106,8 +107,12 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 
 
     if(register_jniplayer(env) != JNI_OK) {
-    	__android_log_print(ANDROID_LOG_ERROR, TAG, "can't load NativeMoviePlayer");
+    	__android_log_print(ANDROID_LOG_ERROR, TAG, "can't register jniplayer");
     }
+
+    if(register_renderer(env) != JNI_OK) {
+		__android_log_print(ANDROID_LOG_ERROR, TAG, "can't register gl_renderer");
+	}
 
     __android_log_print(ANDROID_LOG_INFO, TAG, "loaded");
 

@@ -1,16 +1,27 @@
 LOCAL_PATH := $(call my-dir)
+
+
+#
+# jniplayer.so
+#
 include $(CLEAR_VARS)
 
-LOCAL_ARM_MODE := arm
-LOCAL_ARM_NEON = true
+ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
+LENT_CFLAGS := -DARCH_ARM=1 -DHAVE_NEON=1
+endif
+ifeq ($(TARGET_ARCH_ABI), x86)
+LENT_CFLAGS := -DARCH_X86_32=1
+endif
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../decoder
-							
-LOCAL_SRC_FILES := jniplayer.cpp jniUtils.cpp yuv2rgb565.cpp ../decoder/interface/decoder.cpp
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../lenthevcdec/include/ $(LOCAL_PATH)/../../../../../../ $(LOCAL_PATH)/../ffmpeg-2.0/include/
 
-LOCAL_LDLIBS := -llog -lz -ljnigraphics
+LOCAL_SRC_FILES := jniplayer.cpp jniUtils.cpp yuv2rgb565.cpp gl_renderer.cpp
 
-LOCAL_STATIC_LIBRARIES := lentoid-dec
+LOCAL_LDLIBS := -llog -lz -ljnigraphics -lGLESv2
+
+LOCAL_CFLAGS += $(LENT_CFLAGS)
+
+LOCAL_SHARED_LIBRARIES := ffmpeg lenthevcdec
 
 LOCAL_MODULE := jniplayer
 

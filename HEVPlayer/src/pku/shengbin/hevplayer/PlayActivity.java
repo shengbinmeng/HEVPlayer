@@ -3,7 +3,10 @@ package pku.shengbin.hevplayer;
 import pku.shengbin.utils.MessageBox;
 import android.app.Activity;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -14,7 +17,8 @@ import android.view.WindowManager;
 import android.widget.MediaController;
 import android.widget.MediaController.MediaPlayerControl;
 
-public class PlayActivity extends Activity implements SurfaceHolder.Callback, MediaPlayerControl {	
+public class PlayActivity extends Activity implements SurfaceHolder.Callback, MediaPlayerControl {
+	private static final String TAG = "PlayActivity";
 	private NativeMediaPlayer			mPlayer;
 	private SurfaceView 			mSurfaceView;
 	private MediaController			mMediaController;
@@ -97,29 +101,40 @@ public class PlayActivity extends Activity implements SurfaceHolder.Callback, Me
     // Called when the activity is first created
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-    	requestWindowFeature(Window.FEATURE_NO_TITLE);
-    	getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.play_view);
-                
-        mSurfaceView = (SurfaceView)this.findViewById(R.id.surface_view);       
-        mSurfaceView.getHolder().addCallback(this);
-    	
-        String moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
-        mPlayer = new NativeMediaPlayer(this);
+		super.onCreate(savedInstanceState);
+		
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		setContentView(R.layout.play_view);
+		        
+		mSurfaceView = (SurfaceView)this.findViewById(R.id.surface_view);       
+		mSurfaceView.getHolder().addCallback(this);
+		
+		String moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
+		mPlayer = new NativeMediaPlayer(this);
 		int ret = mPlayer.setDataSource(moviePath);	
 		if (ret != 0) {
 			MessageBox.show(this, "Oops!","Get data source failed! Please check your file or network connection.",
-			new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface arg0, int arg1) {
-				PlayActivity.this.finish();
-			}
-        	});
+				new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface arg0, int arg1) {
+					PlayActivity.this.finish();
+				}
+		    	});
 		}
-	 	mPlayer.setDisplay(mSurfaceView.getHolder());
-	 	mPlayer.prepare(1);
+		mPlayer.setDisplay(mSurfaceView.getHolder());
+		// android maintains the preferences for us, so use directly
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);  
+		int num = Integer.parseInt(settings.getString("multi_thread", "0"));
+		if ( 0 == num ) {
+			int cores = Runtime.getRuntime().availableProcessors();
+			if ( cores <= 1 )
+				num = 1;
+			else
+				num = (cores < 4) ? (cores * 2) : 8;
+			Log.d(TAG, cores + " cores detected! use " + num + " threads.\n");
+		}
 		
+		mPlayer.prepare();
     }
     
 
@@ -170,7 +185,7 @@ public class PlayActivity extends Activity implements SurfaceHolder.Callback, Me
         
         menu.add(0, MENU1, 0, "Original Size");   
         menu.add(0, MENU2, 1, "Choose Media");
-        menu.add(0, MENU3, 2, "Show Info");
+        menu.add(0, MENU3, 2, "Hide Info");
 
         return true;
     }
@@ -312,5 +327,10 @@ public class PlayActivity extends Activity implements SurfaceHolder.Callback, Me
     }
     // end of: utility functions 
     //////////////////////////////////////////////   
+
+	public int getAudioSessionId() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
    
 }

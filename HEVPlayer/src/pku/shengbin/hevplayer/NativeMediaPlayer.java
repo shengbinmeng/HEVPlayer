@@ -1,37 +1,46 @@
 package pku.shengbin.hevplayer;
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Bitmap.Config;
+import android.opengl.GLSurfaceView;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.Surface.OutOfResourcesException;
+import android.widget.TextView;
+
 import java.lang.ref.WeakReference;
 
 public class NativeMediaPlayer {   
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
-    public static final int MEDIA_INFO_FRAMERATE_AUDIO = 901;
-    public static final int MEDIA_INFO_BYTERATE = 902;
-    public static final int MEDIA_INFO_DECODE_FPS = 903;
+    public static final int MEDIA_INFO_END_OF_FILE = 909;
 
 	private int mNativeContext; // accessed by native methods
-    private Activity mOwnerActivity;
+    private static Activity mOwnerActivity;
     private static Surface mSurface;
-    private static Bitmap mFrameBitmap;
-    private static	int mDisplayWidth = 0;
+    private static GLSurfaceView mGLSurfaceView;
+    private static TextView mInfoTextView;
+    private static Bitmap mFrameBitmap = null;
+    private static int mDisplayWidth = 0;
 	private static int mDisplayHeight = 0;   
-    private static	int	mDisplayFPS = -1;
+    private static int mDisplayFPS = -1;
+    private static int mDisplayAvgFPS = -1;
 	private static int mDecodeFPS = -1;
-    private static int	mBitrateVideo = -1;
+    private static int mBitrateVideo = -1;
 	private static int mBitrateAudio = -1; 
     private static boolean mShowInfo = true;
+    private static boolean mShowInfoGL = true;
+    private static String mInfo = "";
     
     private native final void native_init();
     private native final void native_setup(Object mediaplayer_this);
-    private native int native_prepare(int threadNum);
+    private native int native_prepare(int threadNum, float renderFPS);
     private native int native_start();
     private native int native_stop();
     private native int native_pause(); 
@@ -52,16 +61,22 @@ public class NativeMediaPlayer {
     private native static int hasNeon();
 
     static {
-    	System.loadLibrary("cpufeature");
-    	if((hasNeon()) == 1) System.loadLibrary("jniplayer"); 
-    	else System.loadLibrary("jniplayer");
+    	System.loadLibrary("lenthevcdec");
+    	System.loadLibrary("ffmpeg");
+    	System.loadLibrary("jniplayer"); 
     }
     
     public void setDisplay(SurfaceHolder sh) {
-        if (sh != null)
+        if (sh != null) {
             mSurface = sh.getSurface();
+        }
         else
             mSurface = null;
+    }
+    
+    public void setGLDisplay(GLSurfaceView glView, TextView tv) {
+            mGLSurfaceView = glView;
+            mInfoTextView = tv;
     }
     
     public void setDisplaySize(int w, int h) {
@@ -82,8 +97,22 @@ public class NativeMediaPlayer {
     public native int getDuration();
 
 
-    public void prepare(int threadNum) {    
-        native_prepare(threadNum);
+    public void prepare() {    
+    	// android maintains the preferences for us, so use directly
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mOwnerActivity);  
+		int num = Integer.parseInt(settings.getString("multi_thread", "0"));
+		if ( 0 == num ) {
+			int cores = Runtime.getRuntime().availableProcessors();
+			if ( cores <= 1 )
+				num = 1;
+			else
+				num = (cores < 4) ? (cores * 2) : 8;
+			Log.d("NativeMediaPlayer", cores + " cores detected! use " + num + " threads.\n");
+		}
+		
+		float fps = Float.parseFloat(settings.getString("render_fps", "0"));
+		
+        native_prepare(num, fps);
     }
     
     public void start() {
@@ -111,11 +140,52 @@ public class NativeMediaPlayer {
     
     public void setShowInfo (boolean show) {
     	mShowInfo = show;
+    	if (mShowInfo == false && mInfoTextView != null) {
+			mInfoTextView.setText("");
+    	}
     }
 	
 	private native static void renderBitmap(Bitmap  bitmap);
 	
 	public static int drawFrame(int width, int height) {
+		
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(mOwnerActivity);
+        boolean useGL = settings.getBoolean("opengl_switch", true);
+        
+        if (useGL) {
+        	
+        	mGLSurfaceView.requestRender();
+            
+            if (mShowInfoGL) {
+            	mInfo = "";
+    			Paint paint = new Paint();
+    			paint.setColor(Color.WHITE);
+    			paint.setTextSize(40);
+    			if (width > 0) {
+    				mInfo += ("Video Size:" + width + "x" + height);
+    			}
+    			if (mDisplayFPS > 0) {
+    				mInfo += ("    Display FPS:" + mDisplayFPS);
+    			}
+    			if (mDisplayAvgFPS > 0) {
+    				mInfo += String.format("    Average FPS:%.2f", mDisplayAvgFPS / 4096.0);
+    			}
+    			
+    			mOwnerActivity.runOnUiThread(new Runnable() {
+    				@Override
+    				public void run() {
+    					// TODO Auto-generated method stub
+    					mInfoTextView.setText(mInfo);
+    				}
+    			});
+
+    			mShowInfoGL = false;
+    		}
+    		
+            return 0;
+        }
+        
+        // draw without OpenGL
 		Canvas canvas = null;
 		try {
 			canvas = mSurface.lockCanvas(null);
@@ -129,9 +199,10 @@ public class NativeMediaPlayer {
 		
 		canvas.drawColor(Color.BLACK);
 		
-    	if (mFrameBitmap.getWidth() != width)
+    	if ( null == mFrameBitmap || mFrameBitmap.getWidth() != width) {
     		// video size has changed, we need to create a new frame bitmap correspondingly
     		mFrameBitmap = Bitmap.createBitmap(width, height, Config.RGB_565);	
+    	}
     	
     	renderBitmap(mFrameBitmap);
 		
@@ -146,29 +217,41 @@ public class NativeMediaPlayer {
 			    Paint paint = new Paint();
 		    	paint.setFilterBitmap(true);
 		    	canvas.drawBitmap(mFrameBitmap, matrix, paint);
+		    } else {
+		    	canvas.drawBitmap(mFrameBitmap, matrix, null);
 		    }
-		    else canvas.drawBitmap(mFrameBitmap, matrix, null);
+		} else {
+			canvas.drawBitmap(mFrameBitmap,(canvas.getWidth() - mDisplayWidth)/2, (canvas.getHeight() - mDisplayHeight)/2,null);
 		}
-		else canvas.drawBitmap(mFrameBitmap,(canvas.getWidth() - mDisplayWidth)/2, (canvas.getHeight() - mDisplayHeight)/2,null);
 		
 		if (mShowInfo) {
 			Paint paint = new Paint();
-			paint.setColor(Color.BLUE);
-			paint.setTextSize(28);
+			paint.setColor(Color.WHITE);
+			paint.setTextSize(40);
 			String info = "";
-			if (width > 0)
+			if (width > 0) {
 				info += ("Video Size:" + width + "x" + height);
-			if (mDisplayFPS > 0)
+			}
+			if (mDisplayFPS > 0) {
 				info += ("    Display FPS:" + mDisplayFPS);
-			if (mDecodeFPS > 0)
+			}
+			if (mDisplayAvgFPS > 0) {
+				info += String.format("    Average FPS:%.2f", mDisplayAvgFPS / 4096.0);
+			}
+			if (mDecodeFPS > 0) {
 				info += ("    Decode FPS:" + mDecodeFPS);
+			}
 			canvas.drawText(info, 20, 60, paint);
 			info = "";
-			if (mBitrateVideo > 0)
+			if (mBitrateVideo > 0) {
 				info += "Bitrate: video " + Integer.toString(mBitrateVideo);
-			if (mBitrateAudio > 0)
+			}
+			if (mBitrateAudio > 0) {
 				info += ", audio " + Integer.toString(mBitrateAudio);
-			if (mBitrateVideo > 0 || mBitrateAudio > 0) info += ", total " + Integer.toString(mBitrateVideo + mBitrateAudio) + " kbit/s";
+			}
+			if (mBitrateVideo > 0 || mBitrateAudio > 0) {
+				info += ", total " + Integer.toString(mBitrateVideo + mBitrateAudio) + " kbit/s";
+			}
 			canvas.drawText(info, 20, 100, paint);
 		}
 
@@ -177,6 +260,7 @@ public class NativeMediaPlayer {
         return 0;
 	}
 	
+	
 	/**
      * Called from native code when an interesting event happens.  This method
      * just uses the EventHandler system to post the event back to the main app thread.
@@ -184,20 +268,17 @@ public class NativeMediaPlayer {
      * code is safe from the object disappearing from underneath it.  (This is
      * the cookie passed to native_setup().)
      */
-	public static void postEventFromNative(
-                          int what, int arg1, int arg2) {
+	public static void postEventFromNative(int what, int arg1, int arg2) {
     	switch(what) {
     	case MEDIA_INFO_FRAMERATE_VIDEO:
     		mDisplayFPS = arg1;
+    		mDisplayAvgFPS = arg2;
+    		if (mShowInfo) {
+    			mShowInfoGL = true;
+    		}
     		break;
-    	case MEDIA_INFO_FRAMERATE_AUDIO:
-    		break;
-    	case MEDIA_INFO_BYTERATE:
-    		mBitrateVideo = arg1;
-    		mBitrateAudio = arg2;
-    		break;
-    	case MEDIA_INFO_DECODE_FPS:
-    		mDecodeFPS = arg1;
+    	case MEDIA_INFO_END_OF_FILE:
+    		mOwnerActivity.finish();
     		break;
     	}
     }

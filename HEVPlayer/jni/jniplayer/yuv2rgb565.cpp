@@ -1,4 +1,15 @@
+// Copyright (c) 2010 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// contributor Siarhei Siamashka <siarhei.siamashka@gmail.com>
+
+//This file is modified based on:
+//http://dxr.mozilla.org/mozilla-central/source/gfx/ycbcr/yuv_convert_arm.cpp
+
 #include "yuv2rgb565.h"
+
+#if ARCH_ARM && HAVE_NEON
 
 /***************************************
  * convert in neon:
@@ -243,6 +254,7 @@ void ConvertYCbCrToRGB565_neon( const uint8_t* y_buf,
 	}
 }
 
+#endif //ARCH_ARM && HAVE_NEON
 
 
 /*************************************
@@ -324,4 +336,22 @@ void ConvertYCbCrToRGB565_c( 	const uint8_t* y_buf,
 							x_shift,
 							pic_width);
 	}
+}
+
+void ConvertYCbCrToRGB565( 	const uint8_t* y_buf,
+							const uint8_t* u_buf,
+							const uint8_t* v_buf,
+							uint8_t* rgb_buf,
+							int pic_width,
+							int pic_height,
+							int y_stride,
+							int uv_stride,
+							int rgb_stride,
+							int yuv_type)
+{
+#if HAVE_NEON
+	ConvertYCbCrToRGB565_neon(y_buf, u_buf, v_buf, rgb_buf, pic_width, pic_height, y_stride, uv_stride, rgb_stride, yuv_type);
+#else
+	ConvertYCbCrToRGB565_c(y_buf, u_buf, v_buf, rgb_buf, pic_width, pic_height, y_stride, uv_stride, rgb_stride, yuv_type);
+#endif
 }
