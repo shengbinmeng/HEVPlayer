@@ -21,6 +21,10 @@ local.properties
 .metadata/
 .settings/
 
-#for OS X
+# for OS X
 .DS_Store
+
+# jni binaries
+obj/
+libs/
 
