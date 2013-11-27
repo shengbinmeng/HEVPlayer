@@ -19,7 +19,8 @@ local.properties
 .classpath
 .project
 .metadata/
-.settings
+.settings/
 
 #for OS X
 .DS_Store
+
