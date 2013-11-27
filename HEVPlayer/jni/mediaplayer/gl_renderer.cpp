@@ -11,8 +11,8 @@
 #include <math.h>
 
 #include "gl_renderer.h"
-#include "jniUtils.h"
-#include "jniplayer.h"
+#include "jni_utils.h"
+#include "mediaplayer.h"
 
 extern VideoFrame *gVF;
 

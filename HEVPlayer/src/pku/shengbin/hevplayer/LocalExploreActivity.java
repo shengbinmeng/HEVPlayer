@@ -42,14 +42,6 @@ public class LocalExploreActivity extends ListActivity {
 	private File[]			mFiles;
 	
 	static String[] exts = {"hevc", "hm91", "hm10", "bit", "hvc", "h265", "265", "flv", "ts"};
-
-	// for native debug
-   static {
-    	System.loadLibrary("lenthevcdec");
-    	System.loadLibrary("ffmpeg");
-    	System.loadLibrary("jniplayer"); 
-    }
-   // end
     
    @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -172,7 +164,7 @@ public class LocalExploreActivity extends ListActivity {
     	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(LocalExploreActivity.this);  
         boolean useGL = settings.getBoolean("opengl_switch", true);
         if (!useGL) {
-        	i = new Intent(this, PlayActivity.class);
+        	i = new Intent(this, GLPlayActivity.class);
         	Log.i("HEVPlayer", "will play without OpenGL rendering");
         }
     	i.putExtra("pku.shengbin.hevplayer.strMediaPath", filePath);

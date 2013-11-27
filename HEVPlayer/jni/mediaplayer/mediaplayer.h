@@ -1,12 +1,5 @@
-/*
- * jniplayer.h
- *
- *  Created on: Oct 30, 2013
- *      Author: shengbin
- */
-
-#ifndef __JNIPLAYER_H__
-#define __JNIPLAYER_H__
+#ifndef __MEDIAPLAYER_H__
+#define __MEDIAPLAYER_H__
 
 struct VideoFrame
 {

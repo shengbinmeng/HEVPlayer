@@ -19,7 +19,7 @@ import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
 
 public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, MediaPlayerControl {
-	private NativeMediaPlayer		mPlayer;
+	private MediaPlayer				mPlayer;
 	private GLSurfaceView 			mGLSurfaceView;
 	private MediaController			mMediaController;
     
@@ -122,9 +122,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	    rl.addView(tv);
 
 	    this.setContentView(rl);
-		//this.setContentView(mGLSurfaceView);
 		
-		mPlayer = new NativeMediaPlayer(this);
+		mPlayer = new MediaPlayer(this);
     	
     	String moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
 		int ret = mPlayer.setDataSource(moviePath);
@@ -137,8 +136,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 		    	});
 		}
 		
-		mPlayer.setDisplay(mGLSurfaceView.getHolder());
-		mPlayer.setGLDisplay(mGLSurfaceView, tv);
+		mPlayer.setDisplay(mGLSurfaceView, tv);
 		
 		mPlayer.prepare();
 		
@@ -167,7 +165,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
             }
        } else {
         	mStartTwoTouchPoint = false;
-        	if(event.getPointerCount() == 1 && event.getY() > getWindowManager().getDefaultDisplay().getHeight() - 40){
+        	if(event.getPointerCount() == 1 && event.getY() > this.getResources().getDisplayMetrics().heightPixels - 40){
         		if(mMediaController != null)
 	        		if(!mMediaController.isShowing()) {
 		    			mMediaController.show(3000);
@@ -250,8 +248,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
  		int screenWidth, screenHeight, displayWidth = 0, displayHeight = 0;
- 		screenWidth = getWindowManager().getDefaultDisplay().getWidth();
- 		screenHeight = getWindowManager().getDefaultDisplay().getHeight();
+ 		screenWidth = this.getResources().getDisplayMetrics().widthPixels;
+ 		screenHeight = this.getResources().getDisplayMetrics().heightPixels;
  		
  		displayWidth = videoWidth;
  		displayHeight = videoHeight;
@@ -276,8 +274,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
  		int screenWidth, screenHeight, displayWidth = 0, displayHeight = 0;
- 		screenWidth = getWindowManager().getDefaultDisplay().getWidth();
- 		screenHeight = getWindowManager().getDefaultDisplay().getHeight();
+ 		screenWidth = this.getResources().getDisplayMetrics().widthPixels;
+ 		screenHeight = this.getResources().getDisplayMetrics().heightPixels;
  		
  		displayWidth = screenWidth;
  		displayHeight = displayWidth * videoHeight / videoWidth;
@@ -300,8 +298,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     private void zoomLarge() {
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
  		int screenWidth = 0, screenHeight = 0, displayWidth = 0, displayHeight = 0;
- 		screenWidth = getWindowManager().getDefaultDisplay().getWidth();
- 		screenHeight = getWindowManager().getDefaultDisplay().getHeight();
+ 		screenWidth = this.getResources().getDisplayMetrics().widthPixels;
+ 		screenHeight = this.getResources().getDisplayMetrics().heightPixels;
  		
     	mZoomScale += 0.1;
  		displayWidth = (int) (videoWidth * mZoomScale);
@@ -316,8 +314,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     private void zoomSmall() {
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
  		int screenWidth = 0, screenHeight = 0, displayWidth = 0, displayHeight = 0;
- 		screenWidth = getWindowManager().getDefaultDisplay().getWidth();
- 		screenHeight = getWindowManager().getDefaultDisplay().getHeight();
+ 		screenWidth = this.getResources().getDisplayMetrics().widthPixels;
+ 		screenHeight = this.getResources().getDisplayMetrics().heightPixels;
  		
  		mZoomScale -= 0.1;
  		displayWidth = (int) (videoWidth * mZoomScale);

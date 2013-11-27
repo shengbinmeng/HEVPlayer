@@ -17,15 +17,15 @@ import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 
-public class NativeMediaPlayer {   
+public class MediaPlayer {   
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
     public static final int MEDIA_INFO_END_OF_FILE = 909;
 
 	private int mNativeContext; // accessed by native methods
-    private static Activity mOwnerActivity;
-    private static Surface mSurface;
-    private static GLSurfaceView mGLSurfaceView;
-    private static TextView mInfoTextView;
+    private static Activity mOwnerActivity = null;
+    private static Surface mSurface = null;
+    private static GLSurfaceView mGLSurfaceView = null;
+    private static TextView mInfoTextView = null;
     private static Bitmap mFrameBitmap = null;
     private static int mDisplayWidth = 0;
 	private static int mDisplayHeight = 0;   
@@ -47,34 +47,33 @@ public class NativeMediaPlayer {
     private native int native_go();
     private native int native_seekTo(int msec);
 
-    public NativeMediaPlayer(Activity activity) {
+    public MediaPlayer(Activity activity) {
     	native_init();
     	
         /* Native setup requires a weak reference to our object.
          * It's easier to create it here than in C++.
          */
-        native_setup(new WeakReference<NativeMediaPlayer>(this));
+        native_setup(new WeakReference<MediaPlayer>(this));
         
         mOwnerActivity = activity;
     }
     
-    private native static int hasNeon();
-
     static {
     	System.loadLibrary("lenthevcdec");
     	System.loadLibrary("ffmpeg");
-    	System.loadLibrary("jniplayer"); 
+    	System.loadLibrary("mediaplayer");
     }
     
     public void setDisplay(SurfaceHolder sh) {
         if (sh != null) {
             mSurface = sh.getSurface();
         }
-        else
+        else {
             mSurface = null;
+        }
     }
     
-    public void setGLDisplay(GLSurfaceView glView, TextView tv) {
+    public void setDisplay(GLSurfaceView glView, TextView tv) {
             mGLSurfaceView = glView;
             mInfoTextView = tv;
     }
@@ -107,7 +106,7 @@ public class NativeMediaPlayer {
 				num = 1;
 			else
 				num = (cores < 4) ? (cores * 2) : 8;
-			Log.d("NativeMediaPlayer", cores + " cores detected! use " + num + " threads.\n");
+			Log.d("MediaPlayer", cores + " cores detected! use " + num + " threads.\n");
 		}
 		
 		float fps = Float.parseFloat(settings.getString("render_fps", "0"));

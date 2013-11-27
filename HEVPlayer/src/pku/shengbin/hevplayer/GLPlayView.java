@@ -12,7 +12,7 @@ import android.util.Log;
 
 public class GLPlayView extends GLSurfaceView {
     private static String TAG = "GLPlayView";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
 	public GLPlayView(Context context) {
 		super(context);
@@ -173,9 +173,9 @@ public class GLPlayView extends GLSurfaceView {
         private void printConfigs(EGL10 egl, EGLDisplay display,
             EGLConfig[] configs) {
             int numConfigs = configs.length;
-            Log.i(TAG, String.format("%d configurations", numConfigs));
+            Log.d(TAG, String.format("%d configurations", numConfigs));
             for (int i = 0; i < numConfigs; i++) {
-                Log.i(TAG, String.format("Configuration %d:\n", i));
+                Log.d(TAG, String.format("Configuration %d:\n", i));
                 printConfig(egl, display, configs[i]);
             }
         }
@@ -257,9 +257,9 @@ public class GLPlayView extends GLSurfaceView {
                 int attribute = attributes[i];
                 String name = names[i];
                 if ( egl.eglGetConfigAttrib(display, config, attribute, value)) {
-                    Log.i(TAG, String.format("  %s: %d\n", name, value[0]));
+                    Log.d(TAG, String.format("  %s: %d\n", name, value[0]));
                 } else {
-                    // Log.w(TAG, String.format("  %s: failed\n", name));
+                    Log.w(TAG, String.format("  %s: failed\n", name));
                     while (egl.eglGetError() != EGL10.EGL_SUCCESS);
                 }
             }

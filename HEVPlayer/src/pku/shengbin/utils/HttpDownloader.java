@@ -6,8 +6,7 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-
-public class DownUtil {
+public class HttpDownloader {
 	private String path;
 	private String targetFile;
 	private int threadNum;
@@ -16,7 +15,7 @@ public class DownUtil {
 
 	private boolean stop = false;
 
-	public DownUtil(String path, String targetFile, int threadNum) {
+	public HttpDownloader(String path, String targetFile, int threadNum) {
 		this.path = path;
 		this.threadNum = threadNum;
 		threads = new DownloadThread[threadNum];
@@ -122,8 +121,4 @@ public class DownUtil {
 			}
 		}
 	}
-	/*
-	 * public void stopDownload(){ stop=true; } public boolean isDownload(){
-	 * return !stop; }
-	 */
 }

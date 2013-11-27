@@ -31,11 +31,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="pku.shengbin.hevplayer.PlayActivity"
-            android:label="@string/app_name"
-            android:screenOrientation="landscape" >
-        </activity>
-        <activity
             android:name="pku.shengbin.hevplayer.GLPlayActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >

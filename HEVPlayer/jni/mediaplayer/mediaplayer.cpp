@@ -1,34 +1,18 @@
-#include <android/log.h>
-#include <android/bitmap.h>
 #include <stdio.h>
-#include <time.h>
 #include <pthread.h>
 #include <unistd.h>
-#include "jniplayer.h"
-#include "jniUtils.h"
-#include "yuv2rgb565.h"
+#include <time.h>
+#include "mediaplayer.h"
+#include "jni_utils.h"
 #include "gl_renderer.h"
-
-#ifdef __cplusplus
-	#define __STDC_CONSTANT_MACROS
-	#define __STDC_LIMIT_MACROS
-	#ifdef _STDINT_H
-		#undef _STDINT_H
-	#endif
-	#include <stdint.h>
-	#define __STDC_FORMAT_MACROS
-#endif
 
 extern "C" {
 #include "lenthevcdec.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/timestamp.h"
 #include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
 }
 
-#define LOG_TAG    "jniplayer"
+#define LOG_TAG    "mediaplayer"
 
 #define ENABLE_LOGD 0
 #if ENABLE_LOGD
@@ -44,12 +28,6 @@ extern "C" {
 #endif
 
 #define LOOP_PLAY 1
-
-#if ARCH_ARM
-#define USE_SWSCALE 0
-#else
-#define USE_SWSCALE 1
-#endif
 
 struct fields_t {
     jmethodID	drawFrame;
@@ -77,9 +55,7 @@ static MediaInfo media;
 
 static pthread_t decode_thread;
 
-static struct SwsContext   *p_sws_ctx;
-
-static const char* const kClassPathName = "pku/shengbin/hevplayer/NativeMediaPlayer";
+static const char* const kClassPathName = "pku/shengbin/hevplayer/MediaPlayer";
 
 // for lenthevcdec
 static const uint32_t AU_COUNT_MAX = 1024 * 1024;
@@ -673,10 +649,6 @@ MediaPlayer_stop(JNIEnv *env, jobject thiz)
 	exit_decode_thread = 1;
 	pthread_join(decode_thread, &result);
 	exit_decode_thread = 0;
-	if (p_sws_ctx != NULL) {
-		sws_freeContext(p_sws_ctx);
-		p_sws_ctx = NULL;
-	}
 	LOGI("media player stopped\n");
 	return 0;
 }
@@ -729,7 +701,7 @@ MediaPlayer_getDuration(JNIEnv *env, jobject thiz)
 static void MediaPlayer_native_init(JNIEnv *env)
 {
     jclass clazz;
-    clazz = env->FindClass("pku/shengbin/hevplayer/NativeMediaPlayer");
+    clazz = env->FindClass(kClassPathName);
     if (clazz == NULL) {
         jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer");
         return;
@@ -751,7 +723,6 @@ static void MediaPlayer_native_init(JNIEnv *env)
 	gEnv = NULL;
 	gVF = NULL;
 	gEnvLocal = NULL;
-	p_sws_ctx = NULL;
 
 	frames_sum = 0;
 	tstart = 0;
@@ -777,63 +748,6 @@ MediaPlayer_native_setup(JNIEnv *env, jobject thiz, jobject weak_this)
 	gEnv = env;
 }
 
-static void
-MediaPlayer_renderBitmap(JNIEnv *env, jobject  obj, jobject bitmap)
-{
-	void*              pixels;
-	int                ret;
-
-	if ((ret = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-		LOGE("AndroidBitmap_lockPixels() failed ! error=%d", ret);
-	}
-
-	// Convert the image from its native format to RGB565
-	uint32_t start_time = getms();
-	LOGD("before scale: %d", getms());
-#if USE_SWSCALE
-	// use swscale, which may be optimized with SSE for x86 arch
-	if (p_sws_ctx == NULL) {
-		p_sws_ctx = sws_getContext( gVF->width,
-									gVF->height,
-									PIX_FMT_YUV420P,
-									gVF->width,
-									gVF->height,
-									PIX_FMT_RGB565, SWS_BICUBIC|SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_SSE2, NULL, NULL, NULL);
-	}
-	if (p_sws_ctx != NULL) {
-		unsigned char *src[4];
-		int src_stride[4];
-		unsigned char *dst[4];
-		int dst_stride[4];
-
-		src_stride[0] = gVF->linesize_y;
-		src_stride[1] = src_stride[2] = gVF->linesize_uv;
-		dst[0] = (unsigned char*)pixels;
-		dst_stride[0] = gVF->width * 2;
-		sws_scale(p_sws_ctx, (const uint8_t * const *)gVF->yuv_data, src_stride, 0, gVF->height, dst, dst_stride);
-	}
-#else
-	ConvertYCbCrToRGB565(		gVF->yuv_data[0],
-								gVF->yuv_data[1],
-								gVF->yuv_data[2],
-								(uint8_t*)pixels,
-								gVF->width,
-								gVF->height,
-								gVF->linesize_y,
-								gVF->linesize_uv,
-								gVF->width * 2,
-								420  );
-#endif
-
-	uint32_t end_time = getms();
-	LOGD("after scale: %d", getms());
-	LOGD("scale time: %dms", end_time - start_time);
-
-	AndroidBitmap_unlockPixels(env, bitmap);
-}
-
-
-
 
 // ----------------------------------------------------------------------------
 
@@ -852,9 +766,8 @@ static JNINativeMethod gMethods[] = {
     {"getDuration",         "()I",                              (void *)MediaPlayer_getDuration},
     {"native_init",         "()V",                              (void *)MediaPlayer_native_init},
     {"native_setup",        "(Ljava/lang/Object;)V",            (void *)MediaPlayer_native_setup},
-    {"renderBitmap",        "(Landroid/graphics/Bitmap;)V",     (void *)MediaPlayer_renderBitmap},
 };
 
-int register_jniplayer(JNIEnv *env) {
+int register_player(JNIEnv *env) {
 	return jniRegisterNativeMethods(env, kClassPathName, gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
 }
