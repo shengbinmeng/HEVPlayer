@@ -12,20 +12,11 @@
 
 #include "gl_renderer.h"
 #include "jni_utils.h"
-#include "mediaplayer.h"
+#include "framequeue.h"
 
 extern VideoFrame *gVF;
 
 #define LOG_TAG    "gl_renderer"
-
-#define ENABLE_LOGD 0
-#if ENABLE_LOGD
-#define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#else
-#define LOGD(...)
-#endif
-#define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-#define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
 
 static GLuint gProgram;
 static GLuint gTexIds[3];

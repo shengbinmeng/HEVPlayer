@@ -3,8 +3,7 @@
 
 #include <pthread.h>
 
-struct VideoFrame
-{
+struct VideoFrame {
 	int width;
 	int height;
 	int linesize_y;
@@ -14,29 +13,28 @@ struct VideoFrame
 	VideoFrame *next;
 };
 
-class FrameQueue
-{
+class FrameQueue {
 public:
 	FrameQueue();
 	~FrameQueue();
-	
-    void flush();
+
+	void flush();
 	int put(VideoFrame *vf);
-	
+
 	/* return < 0 if aborted, 0 if no packet and > 0 if packet.  */
 	int get(VideoFrame **vf, bool block);
-	
+
 	int size();
-	
+
 	void abort();
-	
+
 private:
-	VideoFrame*			mFirst;
-	VideoFrame*			mLast;
-    int					mSize;
-    bool				mAbortRequest;
-	pthread_mutex_t     mLock;
-	pthread_cond_t		mCondition;
+	VideoFrame* mFirst;
+	VideoFrame* mLast;
+	int mSize;
+	bool mAbortRequest;
+	pthread_mutex_t mLock;
+	pthread_cond_t mCondition;
 };
 
 #endif

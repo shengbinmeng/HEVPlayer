@@ -15,8 +15,6 @@ import android.view.SurfaceHolder;
 import android.view.Surface.OutOfResourcesException;
 import android.widget.TextView;
 
-import java.lang.ref.WeakReference;
-
 public class MediaPlayer {   
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
     public static final int MEDIA_INFO_END_OF_FILE = 909;
@@ -38,9 +36,7 @@ public class MediaPlayer {
     private static boolean mShowInfoGL = true;
     private static String mInfo = "";
     
-    private native final void native_init();
-    private native final void native_setup(Object mediaplayer_this);
-    private native int native_prepare(int threadNum, float renderFPS);
+    private native final void native_init(Object mediaplayer_this);
     private native int native_start();
     private native int native_stop();
     private native int native_pause(); 
@@ -48,13 +44,7 @@ public class MediaPlayer {
     private native int native_seekTo(int msec);
 
     public MediaPlayer(Activity activity) {
-    	native_init();
-    	
-        /* Native setup requires a weak reference to our object.
-         * It's easier to create it here than in C++.
-         */
-        native_setup(new WeakReference<MediaPlayer>(this));
-        
+    	native_init(this);
         mOwnerActivity = activity;
     }
     
@@ -110,8 +100,7 @@ public class MediaPlayer {
 		}
 		
 		float fps = Float.parseFloat(settings.getString("render_fps", "0"));
-		
-        native_prepare(num, fps);
+		Log.d("MediaPlayer", "set fps:" + fps);
     }
     
     public void start() {

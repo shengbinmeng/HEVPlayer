@@ -3,31 +3,30 @@
 
 #include <pthread.h>
 
-class Thread
-{
+class Thread {
 public:
 	Thread();
 	~Thread();
 
-	void						start();
-    void						startAsync();
-    int							join();
+	void start();
+	void startAsync();
+	int join();
 
-    void 						waitOnNotify();
-    void						notify();
-    virtual void				stop();
+	void waitOnNotify();
+	void notify();
+	virtual void stop() = 0;
 
 protected:
-    bool						mRunning;
+	bool mRunning;
 
-    virtual void                handleRun(void* ptr);
-	
+	virtual void run(void* ptr) = 0;
+
 private:
-    pthread_t                   mThread;
-    pthread_mutex_t     		mLock;
-    pthread_cond_t				mCondition;
+	pthread_t mThread;
+	pthread_mutex_t mLock;
+	pthread_cond_t mCondition;
 
-	static void*				startThread(void* ptr);
+	static void* startThread(void* ptr);
 };
 
 #endif //__THREAD_H__
