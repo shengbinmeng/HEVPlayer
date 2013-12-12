@@ -3,11 +3,8 @@
 
 #define LOG_TAG "VideoDecoder"
 
-static uint64_t global_video_pkt_pts = AV_NOPTS_VALUE;
-
 VideoDecoder::VideoDecoder(AVStream* stream) : Decoder(stream) {
-	mStream->codec->get_buffer = getBuffer;
-	mStream->codec->release_buffer = releaseBuffer;
+
 }
 
 VideoDecoder::~VideoDecoder() {
@@ -94,22 +91,4 @@ int VideoDecoder::decode(void* ptr) {
 	av_free(mFrame);
 
 	return 0;
-}
-
-/* These are called whenever we allocate a frame
- * buffer. We use this to store the global_pts in
- * a frame at the time it is allocated.
- */
-int VideoDecoder::getBuffer(struct AVCodecContext *c, AVFrame *pic) {
-	int ret = avcodec_default_get_buffer(c, pic);
-	uint64_t *pts = (uint64_t *) av_malloc(sizeof(uint64_t));
-	*pts = global_video_pkt_pts;
-	pic->opaque = pts;
-	return ret;
-}
-void VideoDecoder::releaseBuffer(struct AVCodecContext *c, AVFrame *pic) {
-	if (pic) {
-		av_freep(&pic->opaque);
-	}
-	avcodec_default_release_buffer(c, pic);
 }

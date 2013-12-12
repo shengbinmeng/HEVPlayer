@@ -30,8 +30,7 @@ static int gDataArraySize;
 VideoFrame *gVF;
 static MediaPlayer *gMP;
 
-MediaPlayerListener::MediaPlayerListener()
-{
+MediaPlayerListener::MediaPlayerListener() {
     // hold onto the MediaPlayer class for use in calling the static method
 	JNIEnv *env = getJNIEnv();
     gClass = env->FindClass("pku/shengbin/hevplayer/MediaPlayer");
@@ -45,20 +44,17 @@ MediaPlayerListener::MediaPlayerListener()
 
 }
 
-MediaPlayerListener::~MediaPlayerListener()
-{
+MediaPlayerListener::~MediaPlayerListener() {
 
 }
 
-void MediaPlayerListener::postEvent(int msg, int ext1, int ext2)
-{
+void MediaPlayerListener::postEvent(int msg, int ext1, int ext2) {
 	JNIEnv *env = getJNIEnv();
 	env->CallStaticVoidMethod(gClass, fields.postEvent, msg, ext1, ext2, 0);
 }
 
-int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size)
-{
-	size = size/2;  // from byte to short
+int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size) {
+	size = size / 2;  // from byte to short
 	if (gEnvLocal == NULL) {
 		gEnvLocal = getJNIEnv();
 	}
@@ -71,8 +67,7 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size)
     return ret;
 }
 
-int MediaPlayerListener::drawFrame(VideoFrame *vf)
-{
+int MediaPlayerListener::drawFrame(VideoFrame *vf) {
 	gVF = vf;
 	if (gEnvLocal2 == NULL) {
 		gEnvLocal2 = getJNIEnv();
@@ -82,8 +77,7 @@ int MediaPlayerListener::drawFrame(VideoFrame *vf)
 
 
 
-static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path)
-{
+static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path) {
 	const char *pathStr = env->GetStringUTFChars(path, NULL);
 
 	env->ReleaseStringUTFChars(path, pathStr);
@@ -91,70 +85,58 @@ static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path)
 	return 0;
 }
 
-static int MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber, jfloat fps)
-{
+static int MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber, jfloat fps) {
 
 }
 
-static int MediaPlayer_start(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_start(JNIEnv *env, jobject thiz) {
 	return 0;
 }
 
-static int MediaPlayer_pause(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_pause(JNIEnv *env, jobject thiz) {
 	return 0;
 }
 
-static int MediaPlayer_go(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_go(JNIEnv *env, jobject thiz) {
 	return 0;
 }
 
 
-static int MediaPlayer_stop(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_stop(JNIEnv *env, jobject thiz) {
 
 }
 
-static bool MediaPlayer_isPlaying(JNIEnv *env, jobject thiz)
-{
+static bool MediaPlayer_isPlaying(JNIEnv *env, jobject thiz) {
 
 }
 
-static int MediaPlayer_seekTo(JNIEnv *env, jobject thiz, jint msec)
-{
+static int MediaPlayer_seekTo(JNIEnv *env, jobject thiz, jint msec) {
 	return 0;
 }
 
-static int MediaPlayer_getVideoWidth(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_getVideoWidth(JNIEnv *env, jobject thiz) {
     int w = 0;
     return w;
 }
 
-static int MediaPlayer_getVideoHeight(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_getVideoHeight(JNIEnv *env, jobject thiz) {
     int h = 0;
     return h;
 }
 
 
-static int MediaPlayer_getCurrentPosition(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_getCurrentPosition(JNIEnv *env, jobject thiz) {
     int msec = 0;
     return msec;
 }
 
-static int MediaPlayer_getDuration(JNIEnv *env, jobject thiz)
-{
+static int MediaPlayer_getDuration(JNIEnv *env, jobject thiz) {
     int msec = 0;
     return msec;
 }
 
 
-static void MediaPlayer_native_init(JNIEnv *env, jobject thiz)
-{
+static void MediaPlayer_native_init(JNIEnv *env, jobject thiz) {
     jclass clazz;
     clazz = env->FindClass("pku/shengbin/hevplayer/MediaPlayer");
     if (clazz == NULL) {
@@ -208,5 +190,5 @@ static JNINativeMethod gMethods[] = {
 };
 
 int register_player(JNIEnv *env) {
-	return jniRegisterNativeMethods(env, "pku/shengbin/hevplayer/NativeMediaPlayer", gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
+	return jniRegisterNativeMethods(env, "pku/shengbin/hevplayer/MediaPlayer", gMethods, sizeof(gMethods) / sizeof(gMethods[0]));
 }

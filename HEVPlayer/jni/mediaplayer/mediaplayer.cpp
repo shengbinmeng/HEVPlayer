@@ -382,10 +382,11 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			if (stream_index >= 0) {
 				seek_target = av_rescale_q(seek_target, AV_TIME_BASE_Q,
 						mFormatContext->streams[stream_index]->time_base);
-			} LOGD("seek target: %lld \n", seek_target);
+			}
+
+			LOGD("seek target: %lld \n", seek_target);
 			int ret = av_seek_frame(mFormatContext, stream_index, seek_target,
-					mSeekPosition - mCurrentPosition < 0 ?
-							AVSEEK_FLAG_BACKWARD : 0);
+					mSeekPosition - mCurrentPosition < 0 ? AVSEEK_FLAG_BACKWARD : 0);
 			if (ret < 0) {
 				LOGE("error while seeking; return: %d \n", ret);
 			} else {
@@ -506,10 +507,12 @@ int MediaPlayer::go() {
 		mCurrentState = MEDIA_PLAYER_STARTED;
 		pthread_mutex_unlock(&mLock);
 
-		if (mAudioDecoder)
+		if (mAudioDecoder) {
 			mAudioDecoder->notify();
-		if (mVideoDecoder)
+		}
+		if (mVideoDecoder) {
 			mVideoDecoder->notify();
+		}
 	}
 	return 0;
 }

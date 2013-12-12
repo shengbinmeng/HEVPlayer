@@ -4,12 +4,11 @@
 #define LOG_TAG "AudioDecoder"
 #define MAX_AUDIO_FRAME_SIZE 192000
 
-AudioDecoder::AudioDecoder(AVStream* stream) : Decoder(stream)
-{
+AudioDecoder::AudioDecoder(AVStream* stream) : Decoder(stream) {
+
 }
 
-int AudioDecoder::prepare()
-{
+int AudioDecoder::prepare() {
     mAudioClock = 0;
     mAudioPts = 0;
     mSamplesSize = MAX_AUDIO_FRAME_SIZE;
@@ -20,9 +19,7 @@ int AudioDecoder::prepare()
     return 0;
 }
 
-int AudioDecoder::process(AVPacket *packet)
-{
-
+int AudioDecoder::process(AVPacket *packet) {
     if (packet->pts != AV_NOPTS_VALUE) {
     	mAudioPts = av_q2d(mStream->time_base) * packet->pts;
     	LOGD("pts: %lld; av_q2d: %f; mAudioPts: %f \n", packet->pts, av_q2d(mStream->time_base), mAudioPts);
@@ -48,10 +45,8 @@ int AudioDecoder::process(AVPacket *packet)
     return 0;
 }
 
-int AudioDecoder::decode(void* ptr)
-{
-    AVPacket        packet;
-
+int AudioDecoder::decode(void* ptr) {
+    AVPacket packet;
     while (mRunning) {
         if (mQueue->get(&packet, true) < 0) {
         	LOGE("get audio packet failed");
