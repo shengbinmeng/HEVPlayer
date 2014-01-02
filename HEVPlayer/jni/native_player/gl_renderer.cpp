@@ -197,7 +197,7 @@ static int setupGraphics(int w, int h) {
     return 0;
 }
 
-void glDrawFrame() {
+void drawFrame() {
 
 	if (gVF == NULL) {
 		LOGI("gVF == NULL");
@@ -283,7 +283,7 @@ jint nativeSetup(JNIEnv * env, jobject obj,  jint width, jint height)
 
 void nativeDrawFrame(JNIEnv * env, jobject obj)
 {
-	glDrawFrame();
+	drawFrame();
 }
 
 static JNINativeMethod methods[] = {

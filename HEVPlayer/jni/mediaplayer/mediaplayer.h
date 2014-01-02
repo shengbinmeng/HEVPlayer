@@ -5,6 +5,7 @@
 #include "audio_decoder.h"
 #include "video_decoder.h"
 #include "framequeue.h"
+#include "mp_listener.h"
 
 enum media_player_state {
 	MEDIA_PLAYER_STATE_ERROR = 1 << 0,
@@ -16,16 +17,6 @@ enum media_player_state {
 	MEDIA_PLAYER_PAUSED = 1 << 6,
 	MEDIA_PLAYER_STOPPED = 1 << 7,
 	MEDIA_PLAYER_PLAYBACK_COMPLETE = 1 << 8
-};
-
-class MediaPlayerListener {
-public:
-	MediaPlayerListener();
-	~MediaPlayerListener();
-	void postEvent(int msg, int ext1, int ext2);
-	int audioTrackWrite(void* data, int offset, int size);
-	int audioTrackFlush();
-	int drawFrame(VideoFrame* vf);
 };
 
 class MediaPlayer {
