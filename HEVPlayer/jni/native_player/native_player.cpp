@@ -16,7 +16,8 @@ static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path) {
 	return 0;
 }
 
-static int MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber, jfloat fps) {
+static int MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNum, jfloat fps) {
+	gMP->setThreadNumber(threadNum);
 	int ret = gMP->prepare();
 	return ret;
 }
@@ -103,7 +104,7 @@ static JNINativeMethod gMethods[] = {
     {"isPlaying",           "()Z",                              (void *)MediaPlayer_isPlaying},
     {"getCurrentPosition",  "()I",                              (void *)MediaPlayer_getCurrentPosition},
     {"getDuration",         "()I",                              (void *)MediaPlayer_getDuration},
-    {"native_init",         "(Ljava/lang/Object;)V",            (void *)native_init},
+    {"native_init",         "()V",            					(void *)native_init},
 };
 
 int register_player(JNIEnv *env) {
