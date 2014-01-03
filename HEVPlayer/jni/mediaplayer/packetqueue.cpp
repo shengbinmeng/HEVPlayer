@@ -70,7 +70,7 @@ int PacketQueue::put(AVPacket* pkt) {
 
 }
 
-/* return < 0 if aborted, 0 if no packet and > 0 if packet.  */
+/* return < 0 if aborted, 0 if packet and > 0 if no packet.  */
 int PacketQueue::get(AVPacket *pkt, bool block) {
 	AVPacketList *pl;
 	int ret = 0;

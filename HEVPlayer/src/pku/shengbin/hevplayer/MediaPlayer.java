@@ -46,7 +46,7 @@ public class MediaPlayer {
     static {
     	System.loadLibrary("lenthevcdec");
     	System.loadLibrary("ffmpeg");
-    	System.loadLibrary("mediaplayer");
+    	System.loadLibrary("native_player");
     }
     
     public void setDisplay(GLSurfaceView glView, TextView tv) {
@@ -120,7 +120,6 @@ public class MediaPlayer {
 	public static int drawFrame(int width, int height) {
         	
     	mGLSurfaceView.requestRender();
-        
         if (mShowInfoGL) {
         	mInfo = "";
 			Paint paint = new Paint();

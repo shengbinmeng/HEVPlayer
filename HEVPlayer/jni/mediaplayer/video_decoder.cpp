@@ -15,6 +15,7 @@ int VideoDecoder::prepare() {
 	mVideoClock = 0;
 	mFrame = avcodec_alloc_frame();
 	if (mFrame == NULL) {
+		LOGE("avcodec_alloc_frame failed \n");
 		return -1;
 	}
 	return 0;
@@ -43,7 +44,6 @@ int VideoDecoder::process(AVPacket *packet) {
 	// decode video frame
 	if (avcodec_decode_video2(mStream->codec, mFrame, &gotFrame, packet) < 0) {
 		LOGE("decode video packet failed");
-		//return false;
 	}
 
 	if (packet->dts == AV_NOPTS_VALUE && mFrame->opaque
@@ -70,18 +70,20 @@ int VideoDecoder::decode(void* ptr) {
 
 	while (mRunning) {
 		if (mQueue->get(&packet, true) < 0) {
-			LOGE("get video packet failed \n");
+			// aborted
 			mRunning = false;
-			return -1;
+			continue;
 		}
 		if (memcmp(packet.data, "FLUSH", sizeof("FLUSH")) == 0) {
 			avcodec_flush_buffers(mStream->codec);
 			LOGD("FLUSH");
 			continue;
-		} LOGD("out queue a video packet; queue size: %d \n", this->queneSize());
-		if (!process(&packet)) {
+		}
+		LOGD("out queue a video packet; queue size: %d \n", this->queneSize());
+		if (process(&packet) != 0) {
+			LOGE("process video packet failed \n");
 			mRunning = false;
-			return -1;
+			continue;
 		}
 
 		av_free_packet(&packet);

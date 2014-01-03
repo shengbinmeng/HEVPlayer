@@ -10,7 +10,7 @@ static MediaPlayer *gMP;
 
 static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path) {
 	const char *pathStr = env->GetStringUTFChars(path, NULL);
-
+	gMP->setDataSource(pathStr);
 	env->ReleaseStringUTFChars(path, pathStr);
 
 	return 0;

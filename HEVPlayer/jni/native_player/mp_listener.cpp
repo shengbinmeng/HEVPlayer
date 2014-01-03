@@ -8,6 +8,7 @@
 #include "gl_renderer.h"
 
 VideoFrame *gVF;
+pthread_mutex_t gVFMutex;
 
 struct fields_t {
     jfieldID    context;
@@ -48,6 +49,7 @@ MediaPlayerListener::MediaPlayerListener() {
     gDataArray = NULL;
     gDataArraySize = 0;
 	gVF = NULL;
+	pthread_mutex_init(&gVFMutex, NULL);
 }
 
 MediaPlayerListener::~MediaPlayerListener() {
@@ -74,7 +76,10 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size) {
 }
 
 int MediaPlayerListener::drawFrame(VideoFrame *vf) {
+	pthread_mutex_lock(&gVFMutex);
 	gVF = vf;
+	pthread_mutex_unlock(&gVFMutex);
+
 	if (gEnvLocal2 == NULL) {
 		gEnvLocal2 = getJNIEnv();
 	}

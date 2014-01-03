@@ -38,8 +38,8 @@ void Decoder::stop() {
 }
 
 void Decoder::run(void* ptr) {
-	if (!prepare()) {
-		LOGI("decoder prepare failed \n");
+	if (prepare() != 0) {
+		LOGE("decoder prepare failed \n");
 		return;
 	}
 	decode(ptr);

@@ -33,7 +33,6 @@ void* Thread::startThread(void* ptr) {
 	thread->mRunning = true;
 	thread->run(ptr);
 	thread->mRunning = false;
-	detachJVM();
 }
 
 void Thread::waitOnNotify() {

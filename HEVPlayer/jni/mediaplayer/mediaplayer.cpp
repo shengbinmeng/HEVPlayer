@@ -12,7 +12,7 @@ extern "C" {
 #include "libavutil/log.h"
 }
 
-#define LOG_TAG "MediaPlayer"
+#define LOG_TAG "mediaplayer"
 
 #define MAX_AP_QUEUE_SIZE (8 * 256)
 #define MAX_VP_QUEUE_SIZE (8 * 64)
@@ -95,7 +95,9 @@ MediaPlayer::MediaPlayer() {
 	video_lack = 0;
 	start_count = 0;
 	firstKeyFrame = 0;
-	time_begin.tv_sec = 0; // disable callback timeout
+	time_begin.tv_sec = 0;
+
+	mCurrentState = MEDIA_PLAYER_INITIALIZED;
 }
 
 MediaPlayer::~MediaPlayer() {
@@ -310,6 +312,9 @@ void MediaPlayer::renderVideo(void* ptr) {
 
 		VideoFrame *vf = NULL;
 		mFrameQueue.get(&vf, true);
+		if (vf == NULL) {
+			break;
+		}
 
 		int size = sPlayer->mFrameQueue.size();
 		LOGD("after get, frame quene size: %d \n", size);
@@ -325,13 +330,10 @@ void MediaPlayer::renderVideo(void* ptr) {
 		double ref_clock = mAudioClock;
 		int64_t delay = (vf->pts - ref_clock) * 1000000;
 		if (delay > 0) {
-			usleep(delay);
+			usleep(40000);
 		}
 
 		sListener->drawFrame(vf);
-
-		free(vf->yuv_data[0]);
-		free(vf);
 	}
 
 	// if decoder is waiting, notify it to give up
@@ -342,6 +344,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		waiting = 0;
 		pthread_mutex_unlock(&mLock);
 	}
+
 	mFrameQueue.abort();
 	mFrameQueue.flush();
 
@@ -363,6 +366,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 	}
 
 	AVPacket p, *packet = &p;
+	LOGI("begin parsing...\n");
 	while (mCurrentState != MEDIA_PLAYER_DECODED
 			&& mCurrentState != MEDIA_PLAYER_STOPPED
 			&& mCurrentState != MEDIA_PLAYER_STATE_ERROR) {
@@ -412,8 +416,8 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			// can continue decoding, so do nothing here
 		}
 
-		if (mVideoDecoder == NULL ? mVideoDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true
-				&& mAudioDecoder == NULL ? mAudioDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true) {
+		if (mVideoDecoder != NULL ? mVideoDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true
+				&& mAudioDecoder != NULL ? mAudioDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true) {
 			LOGD("two many packets, have a rest \n");
 			sleep(1);
 			continue;
@@ -431,9 +435,11 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 		// a packet from the video stream?
 		if (packet->stream_index == mVideoStreamIndex) {
+			LOGD("got a video packet \n");
 			mVideoDecoder->enqueue(packet);
 			LOGD("enqueue a video packet; queue size: %d \n", mVideoDecoder->queneSize());
 		} else if (packet->stream_index == mAudioStreamIndex) {
+			LOGD("got an audio packet \n");
 			mAudioDecoder->enqueue(packet);
 			LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queneSize());
 		} else {
@@ -467,7 +473,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 void* MediaPlayer::startDecoding(void* ptr) {
 	sPlayer->decodeMedia(ptr);
-	detachJVM();
+	//detachJVM();
 }
 
 void* MediaPlayer::startRendering(void* ptr) {
@@ -538,7 +544,6 @@ int MediaPlayer::stop() {
 	}
 
 	LOGI("stopping \n");
-
 	mCurrentState = MEDIA_PLAYER_STOPPED;
 
 	if (mVideoDecoder != NULL) {
@@ -548,6 +553,10 @@ int MediaPlayer::stop() {
 		mAudioDecoder->stop();
 	}
 
+	mFrameQueue.abort();
+	if (pthread_join(mRenderingThread, NULL) != 0) {
+		LOGE("join rendering thread failed \n");
+	}
 	if (pthread_join(mDecodingThread, NULL) != 0) {
 		LOGE("join decoding thread failed \n");
 	}
