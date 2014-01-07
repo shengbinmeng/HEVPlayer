@@ -3,42 +3,42 @@ LOCAL_PATH := $(call my-dir)
 ARCH_ABI := $(TARGET_ARCH_ABI)
 
 #
-# FFMPEG prebuilt static library
+# FFmpeg prebuilt static libraries
 #
 include $(CLEAR_VARS)
-LOCAL_MODULE	:= avutil
-LOCAL_SRC_FILES	:= ../ffmpeg-2.0/lib/$(ARCH_ABI)/libavutil.a
+LOCAL_MODULE	:= avutil_prebuilt
+LOCAL_SRC_FILES	:= lib/$(ARCH_ABI)/libavutil.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE	:= avcodec
-LOCAL_SRC_FILES	:= ../ffmpeg-2.0/lib/$(ARCH_ABI)/libavcodec.a
+LOCAL_MODULE	:= avcodec_prebuilt
+LOCAL_SRC_FILES	:= lib/$(ARCH_ABI)/libavcodec.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE	:= avformat
-LOCAL_SRC_FILES	:= ../ffmpeg-2.0/lib/$(ARCH_ABI)/libavformat.a
+LOCAL_MODULE	:= avformat_prebuilt
+LOCAL_SRC_FILES	:= lib/$(ARCH_ABI)/libavformat.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE	:= swscale
-LOCAL_SRC_FILES	:= ../ffmpeg-2.0/lib/$(ARCH_ABI)/libswscale.a
+LOCAL_MODULE	:= swscale_prebuilt
+LOCAL_SRC_FILES	:= lib/$(ARCH_ABI)/libswscale.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE	:= swresample
-LOCAL_SRC_FILES	:= ../ffmpeg-2.0/lib/$(ARCH_ABI)/libswresample.a
+LOCAL_MODULE	:= swresample_prebuilt
+LOCAL_SRC_FILES	:= lib/$(ARCH_ABI)/libswresample.a
 include $(PREBUILT_STATIC_LIBRARY)
 
 
 #
-# ffmpeg.so
+# FFmpeg shared library
 #
 include $(CLEAR_VARS)
-
-LOCAL_WHOLE_STATIC_LIBRARIES := avutil avcodec avformat swscale swresample
-LOCAL_SHARED_LIBRARIES := lenthevcdec
 
 LOCAL_MODULE := ffmpeg
+LOCAL_WHOLE_STATIC_LIBRARIES := avutil_prebuilt avcodec_prebuilt avformat_prebuilt \
+								avfilter_prebuilt swscale_prebuilt swresample_prebuilt
+LOCAL_SHARED_LIBRARIES := lenthevcdec
 
 include $(BUILD_SHARED_LIBRARY)
