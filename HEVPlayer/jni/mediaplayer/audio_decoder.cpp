@@ -8,12 +8,18 @@ AudioDecoder::AudioDecoder(AVStream* stream) : Decoder(stream) {
 
 }
 
+AudioDecoder::~AudioDecoder() {
+
+}
+
+
 int AudioDecoder::prepare() {
     mAudioClock = 0;
     mAudioPts = 0;
     mSamplesSize = MAX_AUDIO_FRAME_SIZE;
-    mSamples = (int16_t *) av_malloc(mSamplesSize);
+    mSamples = (int16_t *) malloc(mSamplesSize);
     if (mSamples == NULL) {
+    	LOGE("malloc failed \n");
     	return -1;
     }
     return 0;
@@ -49,7 +55,7 @@ int AudioDecoder::decode(void* ptr) {
     AVPacket packet;
     while (mRunning) {
         if (mQueue->get(&packet, true) < 0) {
-        	LOGE("get audio packet failed");
+        	// aborted
             mRunning = false;
             return -1;
         }
@@ -58,7 +64,8 @@ int AudioDecoder::decode(void* ptr) {
           LOGD("FLUSH");
           continue;
         }
-        //LOGI("out queue an audio packet. Number:%d", packets());
+
+		LOGD("out queue an audio packet; queue size: %d \n", this->queneSize());
         if (!process(&packet)) {
             mRunning = false;
             return -1;
@@ -68,6 +75,7 @@ int AudioDecoder::decode(void* ptr) {
     }
 
     // free audio samples buffer
-    av_free(mSamples);
+    free(mSamples);
+    mSamples = NULL;
     return 0;
 }

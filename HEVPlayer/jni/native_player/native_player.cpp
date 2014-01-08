@@ -1,168 +1,96 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <time.h>
-#include "native_player.h"
+
+#include <jni.h>
 #include "jni_utils.h"
-#include "gl_renderer.h"
 #include "mediaplayer.h"
-extern "C" {
-#include "lenthevcdec.h"
-#include "libavutil/imgutils.h"
-#include "libavformat/avformat.h"
-}
+#include "mp_listener.h"
 
 #define LOG_TAG    "native_player"
 
-struct fields_t {
-    jfieldID    context;
-    jmethodID   postEvent;
-    jmethodID	audioTrackWrite;
-    jmethodID	drawFrame;
-};
-static fields_t fields;
-
-static jclass gClass;
-static JNIEnv *gEnvLocal, *gEnvLocal2;
-static jshortArray gDataArray;
-static int gDataArraySize;
-
-VideoFrame *gVF;
 static MediaPlayer *gMP;
 
-MediaPlayerListener::MediaPlayerListener() {
-    // hold onto the MediaPlayer class for use in calling the static method
-	JNIEnv *env = getJNIEnv();
-    gClass = env->FindClass("pku/shengbin/hevplayer/MediaPlayer");
-
-    gEnvLocal = gEnvLocal2 = NULL;
-    gDataArray = NULL;
-    gDataArraySize = 0;
-
-    gVF = NULL;
-    gMP = NULL;
-
-}
-
-MediaPlayerListener::~MediaPlayerListener() {
-
-}
-
-void MediaPlayerListener::postEvent(int msg, int ext1, int ext2) {
-	JNIEnv *env = getJNIEnv();
-	env->CallStaticVoidMethod(gClass, fields.postEvent, msg, ext1, ext2, 0);
-}
-
-int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size) {
-	size = size / 2;  // from byte to short
-	if (gEnvLocal == NULL) {
-		gEnvLocal = getJNIEnv();
-	}
-    if (gDataArray == NULL || gDataArraySize < size) {
-    	gDataArray = gEnvLocal->NewShortArray(size);
-    	gDataArraySize = size;
-    }
-    gEnvLocal->SetShortArrayRegion(gDataArray, 0, size, (jshort*)data);
-    int ret = gEnvLocal->CallStaticIntMethod(gClass, fields.audioTrackWrite, gDataArray, offset, size);
-    return ret;
-}
-
-int MediaPlayerListener::drawFrame(VideoFrame *vf) {
-	gVF = vf;
-	if (gEnvLocal2 == NULL) {
-		gEnvLocal2 = getJNIEnv();
-	}
-    return gEnvLocal2->CallStaticIntMethod(gClass, fields.drawFrame, vf->width, vf->height);
-}
-
-
-
-static int MediaPlayer_setDataSource(JNIEnv *env, jobject thiz, jstring path) {
+static int MediaPlayer_open(JNIEnv *env, jobject thiz, jstring path, jint threadNum, jfloat fps) {
 	const char *pathStr = env->GetStringUTFChars(path, NULL);
-
+	int ret = gMP->open((char *)pathStr);
 	env->ReleaseStringUTFChars(path, pathStr);
-
-	return 0;
+	gMP->setThreadNumber(threadNum);
+	return ret;
 }
 
-static int MediaPlayer_prepare(JNIEnv *env, jobject thiz, jint threadNumber, jfloat fps) {
-
+static int MediaPlayer_close(JNIEnv *env, jobject thiz) {
+	int ret = gMP->close();
+	return ret;
 }
 
 static int MediaPlayer_start(JNIEnv *env, jobject thiz) {
-	return 0;
+	int ret = gMP->start();
+	return ret;
+}
+
+static int MediaPlayer_stop(JNIEnv *env, jobject thiz) {
+	int ret = gMP->stop();
+	return ret;
 }
 
 static int MediaPlayer_pause(JNIEnv *env, jobject thiz) {
-	return 0;
+	int ret = gMP->pause();
+	return ret;
 }
 
 static int MediaPlayer_go(JNIEnv *env, jobject thiz) {
-	return 0;
-}
-
-
-static int MediaPlayer_stop(JNIEnv *env, jobject thiz) {
-
-}
-
-static bool MediaPlayer_isPlaying(JNIEnv *env, jobject thiz) {
-
+	int ret = gMP->go();
+	return ret;
 }
 
 static int MediaPlayer_seekTo(JNIEnv *env, jobject thiz, jint msec) {
-	return 0;
+	int ret = gMP->seekTo(msec);
+	return ret;
+}
+
+static bool MediaPlayer_isPlaying(JNIEnv *env, jobject thiz) {
+	bool ret = gMP->isPlaying();
+	return ret;
 }
 
 static int MediaPlayer_getVideoWidth(JNIEnv *env, jobject thiz) {
     int w = 0;
+    gMP->getVideoWidth(&w);
     return w;
 }
 
 static int MediaPlayer_getVideoHeight(JNIEnv *env, jobject thiz) {
     int h = 0;
+    gMP->getVideoHeight(&h);
     return h;
 }
 
-
 static int MediaPlayer_getCurrentPosition(JNIEnv *env, jobject thiz) {
     int msec = 0;
+    gMP->getCurrentPosition(&msec);
     return msec;
 }
 
 static int MediaPlayer_getDuration(JNIEnv *env, jobject thiz) {
     int msec = 0;
+    gMP->getDuration(&msec);
     return msec;
 }
 
+static void MediaPlayer_getAudioParams(JNIEnv *env, jobject thiz, jintArray params)
+{
+	int p[3] = {0, 0, 0};
+	gMP->getAudioParams(p);
+	LOGD("audio parameters: %d %d %d", p[0], p[1], p[2]);
+	int *nativeParams;
+	nativeParams = (int*)env->GetIntArrayElements(params, NULL);
+	nativeParams[0] = p[0];
+	nativeParams[1] = p[1];
+	nativeParams[2] = p[2];
+	env->ReleaseIntArrayElements(params, nativeParams, 0);
+}
 
-static void MediaPlayer_native_init(JNIEnv *env, jobject thiz) {
-    jclass clazz;
-    clazz = env->FindClass("pku/shengbin/hevplayer/MediaPlayer");
-    if (clazz == NULL) {
-        jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer");
-        return;
-    }
 
-    fields.postEvent = env->GetStaticMethodID(clazz, "postEventFromNative", "(III)V");
-	if (fields.postEvent == NULL) {
-		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.postEventFromNative");
-		return;
-	}
-
-	fields.drawFrame = env->GetStaticMethodID(clazz, "drawFrame","(II)I");
-	if (fields.drawFrame == NULL) {
-		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.drawFrame");
-		return;
-	}
-
+static void native_init(JNIEnv *env, jobject thiz) {
 	MediaPlayer* mp = new MediaPlayer();
-	if (mp == NULL) {
-		LOGE("native init: mp == null");
-		jniThrowException(env, "java/lang/RuntimeException", "Out of memory");
-		return;
-	}
-
 	// create new listener and give it to MediaPlayer
 	MediaPlayerListener* listener = new MediaPlayerListener();
 	mp->setListener(listener);
@@ -174,19 +102,20 @@ static void MediaPlayer_native_init(JNIEnv *env, jobject thiz) {
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gMethods[] = {
-    {"setDataSource",       "(Ljava/lang/String;)I",            (void *)MediaPlayer_setDataSource},
-    {"native_prepare",            "(IF)I",                             (void *)MediaPlayer_prepare},
+    {"native_open",               "(Ljava/lang/String;IF)I",          (void *)MediaPlayer_open},
+    {"native_close",              "()I",                              (void *)MediaPlayer_close},
     {"native_start",              "()I",                              (void *)MediaPlayer_start},
     {"native_stop",               "()I",                              (void *)MediaPlayer_stop},
-    {"getVideoWidth",       "()I",                              (void *)MediaPlayer_getVideoWidth},
-    {"getVideoHeight",      "()I",                              (void *)MediaPlayer_getVideoHeight},
-    {"native_seekTo",             "(I)I",                             (void *)MediaPlayer_seekTo},
     {"native_pause",              "()I",                              (void *)MediaPlayer_pause},
     {"native_go",                 "()I",                              (void *)MediaPlayer_go},
+    {"native_seekTo",             "(I)I",                             (void *)MediaPlayer_seekTo},
     {"isPlaying",           "()Z",                              (void *)MediaPlayer_isPlaying},
+    {"getVideoWidth",       "()I",                              (void *)MediaPlayer_getVideoWidth},
+    {"getVideoHeight",      "()I",                              (void *)MediaPlayer_getVideoHeight},
     {"getCurrentPosition",  "()I",                              (void *)MediaPlayer_getCurrentPosition},
     {"getDuration",         "()I",                              (void *)MediaPlayer_getDuration},
-    {"native_init",         "(Ljava/lang/Object;)V",            (void *)MediaPlayer_native_init},
+    {"getAudioParams", 		"([I)V",                          	(void *)MediaPlayer_getAudioParams},
+    {"native_init",         "()V",            					(void *)native_init},
 };
 
 int register_player(JNIEnv *env) {

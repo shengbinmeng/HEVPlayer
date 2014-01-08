@@ -32,8 +32,6 @@ void FrameQueue::flush() {
 	for (vf = mFirst; vf != NULL; vf = vf1) {
 		vf1 = vf->next;
 		free(vf->yuv_data[0]);
-		free(vf->yuv_data[1]);
-		free(vf->yuv_data[2]);
 		free(vf);
 	}
 

@@ -5,7 +5,7 @@
 #include <jni.h>
 #include <android/log.h>
 
-#define ENABLE_LOGD 0
+#define ENABLE_LOGD 1
 
 #if ENABLE_LOGD
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
@@ -20,5 +20,7 @@ int jniRegisterNativeMethods(JNIEnv* env, const char* className, const JNINative
 
 JNIEnv* getJNIEnv();
 void detachJVM();
+
+uint32_t getms();
 
 #endif /* __JNI_UTILS_H__ */

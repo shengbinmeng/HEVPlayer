@@ -20,8 +20,6 @@ private:
 	double synchronize(AVFrame *src_frame, double pts);
 	int decode(void* ptr);
 	int process(AVPacket *packet);
-	static int getBuffer(struct AVCodecContext *c, AVFrame *pic);
-	static void releaseBuffer(struct AVCodecContext *c, AVFrame *pic);
 };
 
 #endif

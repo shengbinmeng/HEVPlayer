@@ -9,11 +9,7 @@ Decoder::Decoder(AVStream* stream) {
 }
 
 Decoder::~Decoder() {
-	if (mRunning) {
-		stop();
-	}
 	free(mQueue);
-	avcodec_close(mStream->codec);
 }
 
 void Decoder::enqueue(AVPacket* packet) {
@@ -38,8 +34,8 @@ void Decoder::stop() {
 }
 
 void Decoder::run(void* ptr) {
-	if (!prepare()) {
-		LOGI("decoder prepare failed \n");
+	if (prepare() != 0) {
+		LOGE("decoder prepare failed \n");
 		return;
 	}
 	decode(ptr);

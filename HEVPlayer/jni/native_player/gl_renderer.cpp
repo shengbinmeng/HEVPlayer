@@ -15,6 +15,7 @@
 #include "framequeue.h"
 
 extern VideoFrame *gVF;
+extern pthread_mutex_t gVFMutex;
 
 #define LOG_TAG    "gl_renderer"
 
@@ -197,10 +198,13 @@ static int setupGraphics(int w, int h) {
     return 0;
 }
 
-void glDrawFrame() {
+void drawFrame() {
+
+	pthread_mutex_lock(&gVFMutex);
 
 	if (gVF == NULL) {
 		LOGI("gVF == NULL");
+		pthread_mutex_unlock(&gVFMutex);
 		return;
 	}
 
@@ -261,6 +265,10 @@ void glDrawFrame() {
 
     LOGD("after glDrawArrays: %u (%f)", getms(), gVF->pts);
 
+
+	free(gVF->yuv_data[0]);
+	free(gVF);
+	pthread_mutex_unlock(&gVFMutex);
 }
 
 jint nativeInit(JNIEnv * env, jobject obj)
@@ -283,7 +291,7 @@ jint nativeSetup(JNIEnv * env, jobject obj,  jint width, jint height)
 
 void nativeDrawFrame(JNIEnv * env, jobject obj)
 {
-	glDrawFrame();
+	drawFrame();
 }
 
 static JNINativeMethod methods[] = {

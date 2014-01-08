@@ -12,7 +12,7 @@ extern "C" {
 #include "libavutil/log.h"
 }
 
-#define LOG_TAG "MediaPlayer"
+#define LOG_TAG "mediaplayer"
 
 #define MAX_AP_QUEUE_SIZE (8 * 256)
 #define MAX_VP_QUEUE_SIZE (8 * 64)
@@ -95,14 +95,14 @@ MediaPlayer::MediaPlayer() {
 	video_lack = 0;
 	start_count = 0;
 	firstKeyFrame = 0;
-	time_begin.tv_sec = 0; // disable callback timeout
+	time_begin.tv_sec = 0;
+
+	mCurrentState = MEDIA_PLAYER_INITIALIZED;
 }
 
 MediaPlayer::~MediaPlayer() {
-	if (mListener != NULL) {
-		free(mListener);
-		mListener = NULL;
-	}
+	pthread_mutex_destroy(&mLock);
+	pthread_cond_destroy(&mCondition);
 }
 
 int MediaPlayer::prepareAudio() {
@@ -142,6 +142,7 @@ int MediaPlayer::prepareAudio() {
 }
 
 int MediaPlayer::prepareVideo() {
+
 	LOGI("prepareVideo \n");
 
 	// find the first video stream
@@ -159,7 +160,8 @@ int MediaPlayer::prepareVideo() {
 	// get a pointer to the codec context of the video stream
 	AVStream* stream = mFormatContext->streams[mVideoStreamIndex];
 	AVCodecContext* codec_ctx = stream->codec;
-	LOGD("video codec id: %d \n", codec_ctx->codec_id); LOGD("video frame rate: %d/%d, %d/%d, %f", stream->r_frame_rate.num, stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, ((stream->time_base.den) / (stream->time_base.num)));
+	LOGD("video codec id: %d \n", codec_ctx->codec_id);
+	LOGD("video frame rate: %d/%d, %d/%d, %f", stream->r_frame_rate.num, stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float(stream->time_base.den) / (stream->time_base.num)));
 
 	// find and open video decoder
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id);
@@ -185,19 +187,19 @@ int MediaPlayer::prepareVideo() {
 	return 0;
 }
 
-int MediaPlayer::prepare() {
+int MediaPlayer::open(char* file) {
 	if (mCurrentState < MEDIA_PLAYER_INITIALIZED) {
 		LOGE("not initialized \n");
 		return -1;
 	}
 
-	LOGI("preparing \n");
+	LOGI("opening \n");
 
 	// open media file
 	mFormatContext = NULL;
-	int ret = avformat_open_input(&mFormatContext, mDataSource, NULL, NULL);
+	int ret = avformat_open_input(&mFormatContext, file, NULL, NULL);
 	if (ret != 0) {
-		LOGE("av_open_input_file failed: %d, when open: %s \n", ret, mDataSource);
+		LOGE("avformat_open_input failed: %d, when open: %s \n", ret, file);
 		return -1;
 	}
 
@@ -210,8 +212,8 @@ int MediaPlayer::prepare() {
 	mDuration = mFormatContext->duration;
 	LOGI("media duration: %lld \n", mDuration);
 
-	int ret1 = prepareVideo();
-	int ret2 = prepareAudio();
+	int ret1 = prepareAudio();
+	int ret2 = prepareVideo();
 
 	if (ret1 != 0 && ret2 != 0) {
 		mCurrentState = MEDIA_PLAYER_STATE_ERROR;
@@ -224,18 +226,25 @@ int MediaPlayer::prepare() {
 	return 0;
 }
 
-int MediaPlayer::setListener(MediaPlayerListener* listener) {
-	mListener = listener;
-	sListener = mListener;
+int MediaPlayer::close() {
+
+	// close codecs
+	if (mAudioStreamIndex != -1) {
+		avcodec_close(mFormatContext->streams[mAudioStreamIndex]->codec);
+	}
+	if (mVideoStreamIndex != -1) {
+		avcodec_close(mFormatContext->streams[mVideoStreamIndex]->codec);
+	}
+
+	// close the video file
+	avformat_close_input(&mFormatContext);
+
 	return 0;
 }
 
-int MediaPlayer::setDataSource(const char *url) {
-	LOGI("set data source: %s \n", url);
-	if (strlen(url) > 1023) {
-		LOGE("the data source is too long, are you serious? \n");
-	}
-	strcpy(mDataSource, url);
+int MediaPlayer::setListener(MediaPlayerListener* listener) {
+	mListener = listener;
+	sListener = mListener;
 	return 0;
 }
 
@@ -310,6 +319,9 @@ void MediaPlayer::renderVideo(void* ptr) {
 
 		VideoFrame *vf = NULL;
 		mFrameQueue.get(&vf, true);
+		if (vf == NULL) {
+			break;
+		}
 
 		int size = sPlayer->mFrameQueue.size();
 		LOGD("after get, frame quene size: %d \n", size);
@@ -325,13 +337,10 @@ void MediaPlayer::renderVideo(void* ptr) {
 		double ref_clock = mAudioClock;
 		int64_t delay = (vf->pts - ref_clock) * 1000000;
 		if (delay > 0) {
-			usleep(delay);
+			usleep(40000);
 		}
 
 		sListener->drawFrame(vf);
-
-		free(vf->yuv_data[0]);
-		free(vf);
 	}
 
 	// if decoder is waiting, notify it to give up
@@ -342,6 +351,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		waiting = 0;
 		pthread_mutex_unlock(&mLock);
 	}
+
 	mFrameQueue.abort();
 	mFrameQueue.flush();
 
@@ -363,6 +373,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 	}
 
 	AVPacket p, *packet = &p;
+	LOGI("begin parsing...\n");
 	while (mCurrentState != MEDIA_PLAYER_DECODED
 			&& mCurrentState != MEDIA_PLAYER_STOPPED
 			&& mCurrentState != MEDIA_PLAYER_STATE_ERROR) {
@@ -412,8 +423,8 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			// can continue decoding, so do nothing here
 		}
 
-		if (mVideoDecoder == NULL ? mVideoDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true
-				&& mAudioDecoder == NULL ? mAudioDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true) {
+		if (mVideoDecoder != NULL ? mVideoDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true
+				&& mAudioDecoder != NULL ? mAudioDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true) {
 			LOGD("two many packets, have a rest \n");
 			sleep(1);
 			continue;
@@ -467,12 +478,14 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 void* MediaPlayer::startDecoding(void* ptr) {
 	sPlayer->decodeMedia(ptr);
-	detachJVM();
+	//detachJVM();
+	return NULL;
 }
 
 void* MediaPlayer::startRendering(void* ptr) {
 	sPlayer->renderVideo(ptr);
 	detachJVM();
+	return NULL;
 }
 
 int MediaPlayer::start() {
@@ -499,6 +512,7 @@ int MediaPlayer::pause() {
 		pthread_mutex_unlock(&mLock);
 		return 0;
 	}
+	return -1;
 }
 
 int MediaPlayer::go() {
@@ -519,7 +533,7 @@ int MediaPlayer::go() {
 
 // stop and release all the resources
 int MediaPlayer::stop() {
-	if (mCurrentState == MEDIA_PLAYER_STOPPED) {
+	if (mCurrentState == MEDIA_PLAYER_STOPPED || mCurrentState < MEDIA_PLAYER_PREPARED) {
 		return 0;
 	}
 
@@ -538,7 +552,6 @@ int MediaPlayer::stop() {
 	}
 
 	LOGI("stopping \n");
-
 	mCurrentState = MEDIA_PLAYER_STOPPED;
 
 	if (mVideoDecoder != NULL) {
@@ -548,6 +561,10 @@ int MediaPlayer::stop() {
 		mAudioDecoder->stop();
 	}
 
+	mFrameQueue.abort();
+	if (pthread_join(mRenderingThread, NULL) != 0) {
+		LOGE("join rendering thread failed \n");
+	}
 	if (pthread_join(mDecodingThread, NULL) != 0) {
 		LOGE("join decoding thread failed \n");
 	}
@@ -555,9 +572,6 @@ int MediaPlayer::stop() {
 	// free the decoders
 	free(mAudioDecoder);
 	free(mVideoDecoder);
-
-	// close the video file
-	avformat_close_input(&mFormatContext);
 
 	LOGI("stopped \n");
 

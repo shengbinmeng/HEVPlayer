@@ -26,6 +26,8 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     private boolean mStartTwoTouchPoint = false;
     private double 	mStartDistance;
     private double 	mZoomScale = 1;
+    private int		mError = 0;
+
     
 	//////////////////////////////////////////
 	//implements SurfaceHolder.Callback
@@ -34,16 +36,23 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
+    	if (mError != 0) {
+    		return ;
+    	}
  		setDisplaySizeVideo();
 		attachMediaController();
     	mPlayer.start();
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
+    	if (mError != 0) {
+    		return ;
+    	}
 		mPlayer.stop();
 		if(mMediaController != null && mMediaController.isShowing()) {
 			mMediaController.hide();
 		}
+		mPlayer.close();
 		this.finish();
     }
     // end of: implements SurfaceHolder.Callback
@@ -122,24 +131,25 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	    rl.addView(tv);
 
 	    this.setContentView(rl);
-		
+	    
+		mError = 0;
 		mPlayer = new MediaPlayer(this);
     	
     	String moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
-		int ret = mPlayer.setDataSource(moviePath);
+		mPlayer.setDisplay(mGLSurfaceView, tv);
+		
+		int ret = mPlayer.open(moviePath);
 		if (ret != 0) {
-			MessageBox.show(this, "Oops!","Get data source failed! Please check your file or network connection.",
+			MessageBox.show(this, "Oops!","open media failed! Please check your file or network connection.",
 				new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface arg0, int arg1) {
 					GLPlayActivity.this.finish();
 				}
-		    	});
+		    	}
+			);
+			
+			mError = 1;
 		}
-		
-		mPlayer.setDisplay(mGLSurfaceView, tv);
-		
-		mPlayer.prepare();
-		
     }
     
     
