@@ -54,7 +54,7 @@ int VideoDecoder::decode(void* ptr) {
 	AVPacket packet;
 
 	while (mRunning) {
-		if (mQueue->get(&packet, true) < 0) {
+		if (outqueue(&packet) != 0) {
 			// aborted
 			mRunning = false;
 			continue;

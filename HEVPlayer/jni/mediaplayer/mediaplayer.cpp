@@ -326,7 +326,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		}
 
 		VideoFrame *vf = NULL;
-		mFrameQueue.get(&vf, true);
+		mFrameQueue.get(&vf, mCurrentState != MEDIA_PLAYER_PLAYBACK_COMPLETE);
 		if (vf == NULL) {
 			break;
 		}
@@ -472,6 +472,12 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 		if (ret < 0) {
 			LOGE("av_read_frame failed, end of file\n");
+			if (mAudioDecoder != NULL) {
+				mAudioDecoder->endQueue();
+			}
+			if (mVideoDecoder != NULL) {
+				mVideoDecoder->endQueue();
+			}
 			pthread_mutex_lock(&mLock);
 			mCurrentState = MEDIA_PLAYER_DECODED;
 			pthread_mutex_unlock(&mLock);
@@ -522,6 +528,8 @@ void* MediaPlayer::startDecoding(void* ptr) {
 
 void* MediaPlayer::startRendering(void* ptr) {
 	sPlayer->renderVideo(ptr);
+	// tell the play activity to finish
+	sListener->postEvent(909, 0, 0);
 	detachJVM();
 	return NULL;
 }

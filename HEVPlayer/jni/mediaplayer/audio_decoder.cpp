@@ -66,9 +66,8 @@ int AudioDecoder::process(AVPacket *packet) {
 			if (mSwrContext == NULL) {
 				LOGE("allocate context failed \n");
 			}
-			uint64_t channel_layout = av_get_default_channel_layout(mFrame->channels);
-			av_opt_set_int(mSwrContext, "in_channel_layout",  channel_layout, 0);
-			av_opt_set_int(mSwrContext, "out_channel_layout", channel_layout, 0);
+			av_opt_set_int(mSwrContext, "in_channel_layout",  mFrame->channel_layout, 0);
+			av_opt_set_int(mSwrContext, "out_channel_layout", mFrame->channel_layout, 0);
 			av_opt_set_int(mSwrContext, "in_sample_rate",     mFrame->sample_rate, 0);
 			av_opt_set_int(mSwrContext, "out_sample_rate",    mFrame->sample_rate, 0);
 			av_opt_set_sample_fmt(mSwrContext, "in_sample_fmt", (AVSampleFormat)mFrame->format, 0);
@@ -132,7 +131,7 @@ int AudioDecoder::decode(void* ptr) {
     file_out_f = fopen("/sdcard/audio_f.pcm", "wb");
 
     while (mRunning) {
-        if (mQueue->get(&packet, true) < 0) {
+        if (outqueue(&packet) != 0) {
         	// aborted
             mRunning = false;
             continue;

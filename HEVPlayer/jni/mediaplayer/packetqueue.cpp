@@ -67,7 +67,6 @@ int PacketQueue::put(AVPacket* pkt) {
 	pthread_mutex_unlock(&mLock);
 
 	return 0;
-
 }
 
 /* return < 0 if aborted, 0 if packet and > 0 if no packet.  */

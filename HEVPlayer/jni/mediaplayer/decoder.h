@@ -14,14 +14,17 @@ public:
 	Decoder(AVStream* stream);
 	~Decoder();
 
-	void enqueue(AVPacket* packet);
+	int enqueue(AVPacket* packet);
+	int outqueue(AVPacket* packet);
 	int queneSize();
 	void flushQueue();
 	void stop();
+	void endQueue();
 
 protected:
 	PacketQueue* mQueue;
 	AVStream* mStream;
+	bool mBlock;
 
 	virtual int prepare() = 0;
 	virtual int decode(void* ptr) = 0;

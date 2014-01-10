@@ -6,14 +6,19 @@
 Decoder::Decoder(AVStream* stream) {
 	mQueue = new PacketQueue();
 	mStream = stream;
+	mBlock = true;
 }
 
 Decoder::~Decoder() {
 	free(mQueue);
 }
 
-void Decoder::enqueue(AVPacket* packet) {
-	mQueue->put(packet);
+int Decoder::enqueue(AVPacket* packet) {
+	return mQueue->put(packet);
+}
+
+int Decoder::outqueue(AVPacket* packet) {
+	return mQueue->get(packet, mBlock);
 }
 
 int Decoder::queneSize() {
@@ -32,6 +37,11 @@ void Decoder::stop() {
 		return;
 	}
 }
+
+void Decoder::endQueue() {
+	mBlock = false;
+}
+
 
 void Decoder::run(void* ptr) {
 	if (prepare() != 0) {
