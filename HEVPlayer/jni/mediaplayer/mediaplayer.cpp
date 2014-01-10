@@ -32,6 +32,11 @@ static int start_count = 0;
 static int firstKeyFrame = 0;
 static struct timeval time_begin;
 
+static int frames_sum = 0;
+static double tstart = 0;
+static int frames = 0;
+static double tlast = 0;
+
 uint32_t getms() {
 	struct timeval t;
 	gettimeofday(&t, NULL);
@@ -355,6 +360,25 @@ void MediaPlayer::renderVideo(void* ptr) {
 		}
 
 		sListener->drawFrame(vf);
+
+		// update information
+		struct timeval timeNow;
+		gettimeofday(&timeNow, NULL);
+		double tnow = timeNow.tv_sec + (timeNow.tv_usec / 1000000.0);
+		if (tlast == 0) tlast = tnow;
+		if (tstart == 0) tstart = tnow;
+		if (tnow > tlast + 1) {
+			double avg_fps;
+
+			LOGI("Video Display FPS:%i", (int)frames);
+			frames_sum += frames;
+			avg_fps = frames_sum / (tnow - tstart);
+			LOGI("Video AVG FPS:%.2lf", avg_fps);
+			sListener->postEvent(900, int(frames), int(avg_fps * 4096));
+			tlast = tlast + 1;
+			frames = 0;
+		}
+		frames++;
 	}
 
 	// if decoder is waiting, notify it to give up
@@ -447,7 +471,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 		int ret = av_read_frame(mFormatContext, packet);
 
 		if (ret < 0) {
-			LOGE("av_read_frame failed \n");
+			LOGE("av_read_frame failed, end of file\n");
 			pthread_mutex_lock(&mLock);
 			mCurrentState = MEDIA_PLAYER_DECODED;
 			pthread_mutex_unlock(&mLock);
