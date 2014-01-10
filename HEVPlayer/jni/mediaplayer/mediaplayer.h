@@ -79,7 +79,8 @@ private:
 	static void* startRendering(void* ptr);
 
 	static void videoOutput(AVFrame* frame, double pts);
-	static void audioOutput(int16_t* buffer, int buffer_size);
+	static void audioOutput(void* buffer, int buffer_size);
+
 };
 
 #endif

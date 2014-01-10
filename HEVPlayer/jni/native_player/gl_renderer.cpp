@@ -249,7 +249,7 @@ void drawFrame() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-    LOGD("before upload: %u (%f)", getms(), gVF->pts);
+    //LOGD("before upload: %u (%f)", getms(), gVF->pts);
 
 	// upload textures
 	glActiveTexture(GL_TEXTURE0 + 0);
@@ -259,15 +259,17 @@ void drawFrame() {
 	glActiveTexture(GL_TEXTURE0 + 2);
 	glTexImage2D ( GL_TEXTURE_2D, 0, GL_LUMINANCE, gVF->linesize_uv, gVF->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, gVF->yuv_data[2]);
 
-    LOGD("after upload: %u (%f)", getms(), gVF->pts);
+    //LOGD("after upload: %u (%f)", getms(), gVF->pts);
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     LOGD("after glDrawArrays: %u (%f)", getms(), gVF->pts);
 
-
-	free(gVF->yuv_data[0]);
-	free(gVF);
+    if (gVF != NULL) {
+		free(gVF->yuv_data[0]);
+		free(gVF);
+		gVF = NULL;
+    }
 	pthread_mutex_unlock(&gVFMutex);
 }
 

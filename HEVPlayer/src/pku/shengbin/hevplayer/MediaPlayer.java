@@ -97,13 +97,12 @@ public class MediaPlayer {
     	// start audio play back   	
     	int[] params = {0,0,0};
     	getAudioParams(params);
-    	if(params[0] > 0) {
+    	if (params[0] > 0) {
     		int sampleRate = params[0];
-    		int channelConfig=(params[1] == 1) ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
+    		int channelConfig = (params[1] == 1) ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
     		int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     		int bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat);
         	mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate, channelConfig, audioFormat, bufferSize, AudioTrack.MODE_STREAM);
-        	
         	mAudioTrack.play();
     	}
     	
@@ -131,6 +130,11 @@ public class MediaPlayer {
     	if (mShowInfo == false && mInfoTextView != null) {
 			mInfoTextView.setText("");
     	}
+    }
+    
+	public static int audioTrackWrite (short[] data, int offset, int size) {
+    	int ret = mAudioTrack.write(data, offset, size);
+    	return ret;	
     }
 		
 	public static int drawFrame(int width, int height) {

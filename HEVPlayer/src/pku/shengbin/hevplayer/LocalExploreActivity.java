@@ -41,7 +41,8 @@ public class LocalExploreActivity extends ListActivity {
 	private TextView 		mTextViewLocation;
 	private File[]			mFiles;
 	
-	static String[] exts = {"hevc", "hm91", "hm10", "bit", "hvc", "h265", "265", "flv", "ts"};
+	static String[] exts = {"hevc", "hm91", "hm10", "bit", "hvc", "h265", "265", "flv", "ts",
+		"mp3", "mp4", "rmvb"};
     
    @Override
 	protected void onCreate(Bundle savedInstanceState) {

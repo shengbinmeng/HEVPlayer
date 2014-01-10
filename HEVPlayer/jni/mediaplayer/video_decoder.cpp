@@ -21,45 +21,30 @@ int VideoDecoder::prepare() {
 	return 0;
 }
 
-double VideoDecoder::synchronize(AVFrame *frame, double pts) {
-	double frameDelay;
-	if (pts != 0) {
-		/* if we have pts, set video clock to it */
-		mVideoClock = pts;
-	} else {
-		/* if we aren't given a pts, set it to the clock */
-		pts = mVideoClock;
-	}
-	/* update the video clock */
-	frameDelay = av_q2d(mStream->codec->time_base);
-	/* if we are repeating a frame, adjust clock accordingly */
-	frameDelay += frame->repeat_pict * (frameDelay * 0.5);
-	mVideoClock += frameDelay;
-	return pts;
-}
-
 int VideoDecoder::process(AVPacket *packet) {
 	int gotFrame = 0;
-	double pts = 0;
 	// decode video frame
-	if (avcodec_decode_video2(mStream->codec, mFrame, &gotFrame, packet) < 0) {
-		LOGE("decode video packet failed");
+	int len = avcodec_decode_video2(mStream->codec, mFrame, &gotFrame, packet);
+	if (len < 0) {
+		LOGE("decode video packet failed \n");
 	}
 
-	if (packet->dts == AV_NOPTS_VALUE && mFrame->opaque
-			&& *(uint64_t*) mFrame->opaque != AV_NOPTS_VALUE) {
-		pts = *(uint64_t *) mFrame->opaque;
-	} else if (packet->dts != AV_NOPTS_VALUE) {
-		pts = packet->dts;
-	} else {
-		pts = 0;
-	}
+	LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
 
 	if (gotFrame) {
-		pts *= av_q2d(mStream->time_base);
-		pts = synchronize(mFrame, pts);
+		if (mFrame->pts != AV_NOPTS_VALUE) {
+			mVideoClock = av_q2d(mStream->codec->time_base) * mFrame->pts;
+		} else {
+			mVideoClock += av_q2d(mStream->codec->time_base);
+		}
 
-		onDecoded(mFrame, pts);
+		/* if we are repeating a frame, adjust clock accordingly */
+    	double frameDelay = mFrame->repeat_pict * (av_q2d(mStream->codec->time_base) * 0.5);
+		mVideoClock += frameDelay;
+
+		LOGD("output a video frame, mVideoClock: %lf \n", mVideoClock);
+
+		onDecoded(mFrame, mVideoClock);
 	}
 
 	return 0;
@@ -90,7 +75,7 @@ int VideoDecoder::decode(void* ptr) {
 	}
 
 	// free the frame
-	av_free(mFrame);
+	avcodec_free_frame(&mFrame);
 
 	return 0;
 }

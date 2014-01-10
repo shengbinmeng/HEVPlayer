@@ -2,8 +2,12 @@
 #define __AUDIO_DECODER_H__
 
 #include "decoder.h"
+extern "C" {
+#include "libswresample/swresample.h"
+#include "libavutil/opt.h"
+}
 
-typedef void (*AudioDecodingHandler)(int16_t*, int);
+typedef void (*AudioDecodingHandler)(void*, int);
 
 class AudioDecoder: public Decoder {
 public:
@@ -16,9 +20,9 @@ public:
 	double mAudioPts;
 
 private:
-	int16_t* mSamples;
-	int mSamplesSize;
-
+	AVFrame* mFrame;
+	SwrContext *mSwrContext;
+    void* mSamples;
 	int prepare();
 	int decode(void* ptr);
 	int process(AVPacket *packet);

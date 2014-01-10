@@ -12,7 +12,7 @@ extern "C" {
 #include "libavutil/log.h"
 }
 
-#define LOG_TAG "mediaplayer"
+#define LOG_TAG "MediaPlayer"
 
 #define MAX_AP_QUEUE_SIZE (8 * 256)
 #define MAX_VP_QUEUE_SIZE (8 * 64)
@@ -58,7 +58,7 @@ static void ffmpeg_log_callback (void* ptr, int level, const char* fmt, va_list 
 		break;
 
 		case AV_LOG_DEBUG:
-		LOGD("%s \n", s);
+		//LOGD("%s \n", s);
 		break;
 	}
 }
@@ -124,7 +124,10 @@ int MediaPlayer::prepareAudio() {
 	// get a pointer to the codec context for the video stream
 	AVStream* stream = mFormatContext->streams[mAudioStreamIndex];
 	AVCodecContext* codec_ctx = stream->codec;
-	LOGD("audio codec id: %d \n", codec_ctx->codec_id); LOGD("audio codec sample rate: %d \n", codec_ctx->sample_rate);
+	LOGD("audio codec id: %d \n", codec_ctx->codec_id);
+	char buffer[128];
+	av_get_sample_fmt_string(buffer, 128, codec_ctx->sample_fmt);
+	LOGD("sample rate: %d, format: %d (%s) \n", codec_ctx->sample_rate, codec_ctx->sample_fmt, buffer);
 
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id ? codec_ctx->codec_id : CODEC_ID_MP3);
 	if (codec == NULL) {
@@ -161,7 +164,7 @@ int MediaPlayer::prepareVideo() {
 	AVStream* stream = mFormatContext->streams[mVideoStreamIndex];
 	AVCodecContext* codec_ctx = stream->codec;
 	LOGD("video codec id: %d \n", codec_ctx->codec_id);
-	LOGD("video frame rate: %d/%d, %d/%d, %f", stream->r_frame_rate.num, stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float(stream->time_base.den) / (stream->time_base.num)));
+	LOGD("frame rate and time base: %d/%d = %f, %d/%d = %f \n", stream->r_frame_rate.num, stream->r_frame_rate.den, (float)stream->r_frame_rate.num / stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float)stream->time_base.num / stream->time_base.den);
 
 	// find and open video decoder
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id);
@@ -255,7 +258,7 @@ int MediaPlayer::setThreadNumber(int num) {
 }
 
 // handler for receiving decoded audio buffers
-void MediaPlayer::audioOutput(int16_t* buffer, int buffer_size) {
+void MediaPlayer::audioOutput(void* buffer, int buffer_size) {
 	if (sPlayer->mCurrentState == MEDIA_PLAYER_PAUSED) {
 		sPlayer->mAudioDecoder->waitOnNotify();
 	}
@@ -291,15 +294,15 @@ void MediaPlayer::videoOutput(AVFrame* frame, double pts) {
 	vf->yuv_data[1] = vf->yuv_data[0] + vf->height * vf->linesize_y;
 	vf->yuv_data[2] = vf->yuv_data[1] + vf->height / 2 * vf->linesize_uv;
 
-	LOGD("before copy: %u \n", getms());
+	//LOGD("before copy: %u \n", getms());
 	memcpy(vf->yuv_data[0], frame->data[0], vf->height * vf->linesize_y);
 	memcpy(vf->yuv_data[1], frame->data[1], vf->height / 2 * vf->linesize_uv);
 	memcpy(vf->yuv_data[2], frame->data[2], vf->height / 2 * vf->linesize_uv);
-	LOGD("after copy: %u \n", getms());
+	//LOGD("after copy: %u \n", getms());
 
 	sPlayer->mFrameQueue.put(vf);
 	int size = sPlayer->mFrameQueue.size();
-	LOGD("after put, frame queue size: %d \n", size);
+	LOGD("after put, video frame queue size: %d \n", size);
 
 	pthread_mutex_lock(&sPlayer->mLock);
 	if (size >= MAX_FRAME_QUEUE_SIZE && waiting == 0) {
@@ -324,7 +327,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		}
 
 		int size = sPlayer->mFrameQueue.size();
-		LOGD("after get, frame quene size: %d \n", size);
+		LOGD("after get, video frame quene size: %d \n", size);
 
 		pthread_mutex_lock(&mLock);
 		if (size < 0.6 * MAX_FRAME_QUEUE_SIZE && waiting == 1) {
@@ -334,10 +337,21 @@ void MediaPlayer::renderVideo(void* ptr) {
 		}
 		pthread_mutex_unlock(&mLock);
 
-		double ref_clock = mAudioClock;
-		int64_t delay = (vf->pts - ref_clock) * 1000000;
+		double delay = vf->pts - mFrameLastPTS;
+
+		mFrameLastPTS = vf->pts;
+
+		double diff = 0;
+		if (mAudioStreamIndex != -1) {
+			double ref_clock = mAudioClock + delay;
+			diff = vf->pts - ref_clock;
+			LOGD("diff: %lf - %lf = %lf (%lld)", vf->pts, ref_clock, diff, (int64_t)(diff * 1000));
+		}
+
+		delay += diff;
+		LOGD("delay: %lf (%lld)", delay, (int64_t)(delay*1000));
 		if (delay > 0) {
-			usleep(40000);
+			usleep(delay*1000000);
 		}
 
 		sListener->drawFrame(vf);
@@ -443,10 +457,10 @@ void MediaPlayer::decodeMedia(void* ptr) {
 		// a packet from the video stream?
 		if (packet->stream_index == mVideoStreamIndex) {
 			mVideoDecoder->enqueue(packet);
-			LOGD("enqueue a video packet; queue size: %d \n", mVideoDecoder->queneSize());
+			//LOGD("enqueue a video packet; queue size: %d \n", mVideoDecoder->queneSize());
 		} else if (packet->stream_index == mAudioStreamIndex) {
 			mAudioDecoder->enqueue(packet);
-			LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queneSize());
+			//LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queneSize());
 		} else {
 			LOGE("not video or audio packet \n");
 			pthread_mutex_lock(&mLock);

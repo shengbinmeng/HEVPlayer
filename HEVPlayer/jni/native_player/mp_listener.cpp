@@ -7,6 +7,8 @@
 #include "jni_utils.h"
 #include "gl_renderer.h"
 
+#define LOG_TAG "mp_listener"
+
 VideoFrame *gVF;
 pthread_mutex_t gVFMutex;
 
@@ -20,7 +22,8 @@ static fields_t gFields;
 
 static jclass gClass;
 static JNIEnv *gEnvLocal, *gEnvLocal2;
-static jshortArray gDataArray;
+static jbyteArray gByteArray;
+static jshortArray gShortArray;
 static int gDataArraySize;
 
 MediaPlayerListener::MediaPlayerListener() {
@@ -43,10 +46,17 @@ MediaPlayerListener::MediaPlayerListener() {
 		return;
 	}
 
+	gFields.audioTrackWrite = env->GetStaticMethodID(clazz, "audioTrackWrite","([SII)I");
+	if (gFields.audioTrackWrite == NULL) {
+		jniThrowException(env, "java/lang/RuntimeException", "Can't find MediaPlayer.audioTrackWrite");
+		return;
+	}
+
     // hold onto the MediaPlayer class for use in calling the static method
     gClass = clazz;
     gEnvLocal = gEnvLocal2 = NULL;
-    gDataArray = NULL;
+    gByteArray = NULL;
+    gShortArray = NULL;
     gDataArraySize = 0;
 	gVF = NULL;
 	pthread_mutex_init(&gVFMutex, NULL);
@@ -61,18 +71,23 @@ void MediaPlayerListener::postEvent(int msg, int ext1, int ext2) {
 	env->CallStaticVoidMethod(gClass, gFields.postEvent, msg, ext1, ext2, 0);
 }
 
-int MediaPlayerListener::audioTrackWrite(void* data, int offset, int size_in_byte) {
-	int size = size_in_byte / 2;  // from byte to short
+int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) {
+	if (data == NULL) {
+		return -1;
+	}
 	if (gEnvLocal == NULL) {
 		gEnvLocal = getJNIEnv();
 	}
-    if (gDataArray == NULL || gDataArraySize < size) {
-    	gDataArray = gEnvLocal->NewShortArray(size);
-    	gDataArraySize = size;
-    }
-    gEnvLocal->SetShortArrayRegion(gDataArray, 0, size, (jshort*)data);
-    int ret = gEnvLocal->CallStaticIntMethod(gClass, gFields.audioTrackWrite, gDataArray, offset, size);
-    return ret;
+	int size = data_size / 2;
+	if (gShortArray == NULL || gDataArraySize < size) {
+		gShortArray = gEnvLocal->NewShortArray(size);
+		gDataArraySize = size;
+	}
+	gEnvLocal->SetShortArrayRegion(gShortArray, 0, size, (jshort*)data);
+	LOGD("write to audio track: %d shorts", size);
+	int ret = gEnvLocal->CallStaticIntMethod(gClass, gFields.audioTrackWrite, gShortArray, offset, size);
+	return ret;
+
 }
 
 int MediaPlayerListener::drawFrame(VideoFrame *vf) {

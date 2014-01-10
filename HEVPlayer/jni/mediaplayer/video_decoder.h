@@ -17,7 +17,6 @@ private:
 	AVFrame* mFrame;
 
 	int prepare();
-	double synchronize(AVFrame *src_frame, double pts);
 	int decode(void* ptr);
 	int process(AVPacket *packet);
 };
