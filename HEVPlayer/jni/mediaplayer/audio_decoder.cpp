@@ -7,7 +7,7 @@ extern "C" {
 
 #define LOG_TAG "AudioDecoder"
 #define MAX_AUDIO_FRAME_SIZE 192000
-FILE *file_out, *file_out_f;
+
 AudioDecoder::AudioDecoder(AVStream* stream) : Decoder(stream) {
 
 }
@@ -57,7 +57,6 @@ int AudioDecoder::process(AVPacket *packet) {
 
 		LOGD("output an audio frame: %d * %d * (%d->2) = %d, mAudioClock: %lf", mFrame->channels, mFrame->nb_samples, bps, size, mAudioClock);
 
-		LOGD("before conversion \n");
 #if 1
 		// conversion using swresample
 		if (mSwrContext == NULL) {
@@ -113,13 +112,9 @@ int AudioDecoder::process(AVPacket *packet) {
 			}
 		}
 #endif
-		LOGD("conversion finished \n");
 
 		// call handler for posting buffer to os audio driver
 	    onDecoded(mSamples, size);
-	    //fwrite(mSamples, 1, size, file_out);
-	    //fwrite(mFrame->extended_data[0], 1, size, file_out_f);
-	    //fwrite(mFrame->extended_data[1], 1, size, file_out_f);
 	}
 
     return 0;
@@ -127,8 +122,6 @@ int AudioDecoder::process(AVPacket *packet) {
 
 int AudioDecoder::decode(void* ptr) {
     AVPacket packet;
-    file_out = fopen("/sdcard/audio.pcm", "wb");
-    file_out_f = fopen("/sdcard/audio_f.pcm", "wb");
 
     while (mRunning) {
         if (outqueue(&packet) != 0) {
@@ -159,10 +152,6 @@ int AudioDecoder::decode(void* ptr) {
 	if (mSwrContext != NULL) {
 		swr_free(&mSwrContext);
 	}
-	fflush(file_out);
-	fclose(file_out);
-	fflush(file_out_f);
-	fclose(file_out_f);
 
 	detachJVM();
 
