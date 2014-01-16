@@ -14,8 +14,8 @@ extern "C" {
 
 #define LOG_TAG "MediaPlayer"
 
-#define MAX_AP_QUEUE_SIZE (8 * 256)
-#define MAX_VP_QUEUE_SIZE (8 * 64)
+#define MAX_AP_QUEUE_SIZE (1 * 128)
+#define MAX_VP_QUEUE_SIZE (1 * 128)
 #define MAX_FRAME_QUEUE_SIZE 100
 #define TIMEOUT_MS 5000
 
@@ -369,11 +369,9 @@ void MediaPlayer::renderVideo(void* ptr) {
 		if (tstart == 0) tstart = tnow;
 		if (tnow > tlast + 1) {
 			double avg_fps;
-
-			LOGI("Video Display FPS:%i", (int)frames);
 			frames_sum += frames;
 			avg_fps = frames_sum / (tnow - tstart);
-			LOGI("Video AVG FPS:%.2lf", avg_fps);
+			LOGI("Video Display FPS: %i, average FPS: %.2lf", (int)frames, avg_fps);
 			sListener->postEvent(900, int(frames), int(avg_fps * 4096));
 			tlast = tlast + 1;
 			frames = 0;
