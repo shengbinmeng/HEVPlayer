@@ -573,6 +573,10 @@ int MediaPlayer::go() {
 		if (mVideoDecoder) {
 			mVideoDecoder->notify();
 		}
+
+		// recalculate average FPS
+		tstart = 0;
+		frames_sum = 0;
 	}
 	return 0;
 }
