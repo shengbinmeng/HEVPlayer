@@ -7,6 +7,9 @@ SYSROOT=$ANDROID_NDK/platforms/android-9/arch-arm
 TOOLCHAIN=$ANDROID_NDK/toolchains/arm-linux-androideabi-4.8/prebuilt/darwin-x86_64
 PREFIX=./android/arm
 
+#
+# read the configure help carefully before you want to change the following options
+#
 ./configure \
     --prefix=$PREFIX \
     --target-os=linux \
@@ -17,30 +20,19 @@ PREFIX=./android/arm
     --sysroot=$SYSROOT \
     --extra-cflags="-O2 -Ithirdparty/arm -fPIC -march=armv7-a -mfpu=neon -mfloat-abi=softfp" \
     --extra-ldflags="-Lthirdparty/arm " \
-    --enable-static \
     --enable-gpl \
     --enable-version3 \
     --enable-nonfree \
     --disable-doc \
-    --disable-htmlpages \
-    --disable-manpages \
-    --disable-podpages \
-    --disable-txtpages \
+    --disable-programs \
     --enable-ffmpeg \
-    --disable-ffplay \
-    --disable-ffserver \
-    --disable-ffprobe \
-    --disable-zlib \
-    --disable-bzlib \
     --disable-avdevice \
     --disable-postproc \
-    --disable-avresample \
-    --disable-encoders \
-    --disable-muxers \
     --disable-devices \
     --disable-filters \
     --disable-bsfs \
+    --disable-zlib \
+    --disable-bzlib \
+    --disable-encoders \
+    --disable-muxers \
     --enable-liblenthevcdec \
-    --enable-decoder=liblenthevchm91 \
-    --enable-decoder=liblenthevchm10 \
-    --enable-decoder=liblenthevc \

@@ -7,6 +7,9 @@ SYSROOT=$ANDROID_NDK/platforms/android-9/arch-x86
 TOOLCHAIN=$ANDROID_NDK/toolchains/x86-4.8/prebuilt/darwin-x86_64
 PREFIX=./android/x86
 
+#
+# read the configure help carefully before you want to change the following options
+#
 ./configure \
     --prefix=$PREFIX \
     --target-os=linux \
@@ -20,30 +23,19 @@ PREFIX=./android/x86
     --disable-amd3dnow \
     --disable-amd3dnowext \
     --disable-mmx \
-    --enable-static \
-    --enable-gpl \
+	--enable-gpl \
     --enable-version3 \
     --enable-nonfree \
     --disable-doc \
-    --disable-htmlpages \
-    --disable-manpages \
-    --disable-podpages \
-    --disable-txtpages \
+    --disable-programs \
     --enable-ffmpeg \
-    --disable-ffplay \
-    --disable-ffserver \
-    --disable-ffprobe \
-    --disable-zlib \
-    --disable-bzlib \
     --disable-avdevice \
     --disable-postproc \
-    --disable-avresample \
-    --disable-encoders \
-    --disable-muxers \
     --disable-devices \
     --disable-filters \
     --disable-bsfs \
+    --disable-zlib \
+    --disable-bzlib \
+    --disable-encoders \
+    --disable-muxers \
     --enable-liblenthevcdec \
-    --enable-decoder=liblenthevchm91 \
-    --enable-decoder=liblenthevchm10 \
-    --enable-decoder=liblenthevc \
