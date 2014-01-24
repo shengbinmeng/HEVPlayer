@@ -76,6 +76,6 @@ int VideoDecoder::decode(void* ptr) {
 
 	// free the frame
 	avcodec_free_frame(&mFrame);
-
+	LOGI("end of video decoding \n");
 	return 0;
 }

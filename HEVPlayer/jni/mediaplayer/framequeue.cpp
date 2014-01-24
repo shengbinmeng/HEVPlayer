@@ -60,7 +60,7 @@ int FrameQueue::put(VideoFrame *vf) {
 	return 0;
 }
 
-// return < 0 if aborted, 0 if packet and > 0 if no packet
+// return < 0 if aborted, 0 if got and > 0 if empty
 int FrameQueue::get(VideoFrame **vf, bool block) {
 	int ret = 0;
 

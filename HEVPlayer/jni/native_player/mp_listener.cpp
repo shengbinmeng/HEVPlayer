@@ -85,9 +85,7 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) 
 	}
 	gEnvLocal->SetShortArrayRegion(gShortArray, 0, size, (jshort*)data);
 	LOGD("write to audio track: %d shorts", size);
-	int ret = gEnvLocal->CallStaticIntMethod(gClass, gFields.audioTrackWrite, gShortArray, offset, size);
-	return ret;
-
+	return gEnvLocal->CallStaticIntMethod(gClass, gFields.audioTrackWrite, gShortArray, offset, size);
 }
 
 int MediaPlayerListener::drawFrame(VideoFrame *vf) {

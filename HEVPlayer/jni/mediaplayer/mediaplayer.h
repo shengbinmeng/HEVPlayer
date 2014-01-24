@@ -8,15 +8,16 @@
 #include "mp_listener.h"
 
 enum media_player_state {
-	MEDIA_PLAYER_STATE_ERROR = 1 << 0,
-	MEDIA_PLAYER_IDLE = 1 << 1,
-	MEDIA_PLAYER_INITIALIZED = 1 << 2,
-	MEDIA_PLAYER_PREPARED = 1 << 3,
-	MEDIA_PLAYER_DECODED = 1 << 4,
-	MEDIA_PLAYER_STARTED = 1 << 5,
-	MEDIA_PLAYER_PAUSED = 1 << 6,
-	MEDIA_PLAYER_STOPPED = 1 << 7,
-	MEDIA_PLAYER_PLAYBACK_COMPLETE = 1 << 8
+	MEDIA_PLAYER_STATE_ERROR = 0,
+	MEDIA_PLAYER_IDLE,
+	MEDIA_PLAYER_INITIALIZED,
+	MEDIA_PLAYER_PREPARED,
+	MEDIA_PLAYER_PARSED,
+	MEDIA_PLAYER_VIDEO_DECODED,
+	MEDIA_PLAYER_STARTED,
+	MEDIA_PLAYER_PAUSED,
+	MEDIA_PLAYER_STOPPED,
+	MEDIA_PLAYER_PLAYBACK_COMPLETE
 };
 
 class MediaPlayer {
@@ -61,10 +62,12 @@ private:
 	int mVideoHeight;
 	FrameQueue mFrameQueue;
 
+	// in ms
 	int64_t mDuration;
 	int64_t mCurrentPosition;
 	int64_t mSeekPosition;
 
+	// in seconds
 	double mTime;
 	double mAudioClock;
 	double mFrameLastDelay, mFrameLastPTS;

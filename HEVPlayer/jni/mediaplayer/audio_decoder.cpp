@@ -153,7 +153,8 @@ int AudioDecoder::decode(void* ptr) {
 		swr_free(&mSwrContext);
 	}
 
-	detachJVM();
+	LOGI("end of audio decoding \n");
 
+	detachJVM();
 	return 0;
 }
