@@ -152,7 +152,7 @@ public class MediaPlayer {
 				mInfo += ("    Display FPS:" + mDisplayFPS);
 			}
 			if (mDisplayAvgFPS > 0) {
-				mInfo += String.format("    Average FPS:%.2f", mDisplayAvgFPS / 4096.0);
+				//mInfo += String.format("    Average FPS:%.2f", mDisplayAvgFPS / 4096.0);
 			}
 			
 			mOwnerActivity.runOnUiThread(new Runnable() {
