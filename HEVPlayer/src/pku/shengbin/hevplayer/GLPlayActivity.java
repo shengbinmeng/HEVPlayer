@@ -65,7 +65,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	}
 	
 	public void seekTo(int pos) {
-		mPlayer.seekTo(pos);
+		//mPlayer.seekTo(pos);
 	}
 	
 	public void pause() {
