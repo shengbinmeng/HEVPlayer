@@ -67,7 +67,7 @@ public class LocalExploreActivity extends ListActivity {
 				return true;
 			}
 		}
-		return false; // true if not check!!
+		return true; // true if not check!!
 	}
 	
 	private void sortFiles(File[] files) {
