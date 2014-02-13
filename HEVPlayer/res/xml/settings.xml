@@ -23,6 +23,7 @@
 			android:defaultValue="false" android:key="show_hidden_switch">
 		</CheckBoxPreference>		
 	</PreferenceCategory>
+	<!--
 	<PreferenceCategory
 		android:title="Playback" xmlns:android="http://schemas.android.com/apk/res/android">
 		<ListPreference
@@ -49,5 +50,6 @@
 			android:summaryOff="OpenGL rendering not used"
 			android:defaultValue="true" android:key="opengl_switch">
 		</CheckBoxPreference>	
-	</PreferenceCategory>	
+	</PreferenceCategory>
+	 -->	
 </PreferenceScreen>
