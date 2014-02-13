@@ -231,7 +231,7 @@ void drawFrame() {
 		}
 
 		// modify the texture coordinates
-		float texCoord = ((float)width) / gVF->linesize_y;
+		float texCoord = ((float)(width-1)) / gVF->linesize_y;
 		textureCoords[2] = textureCoords[6] = texCoord;
 
 		// set the value of attributes
