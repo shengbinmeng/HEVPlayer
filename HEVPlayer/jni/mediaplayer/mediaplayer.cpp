@@ -217,7 +217,7 @@ int MediaPlayer::open(char* file) {
 		return -1;
 	}
 
-	mDuration = mFormatContext->duration;
+	mDuration = mFormatContext->duration / AV_TIME_BASE * 1000;
 	LOGI("media duration: %lld \n", mDuration);
 
 	int ret1 = prepareAudio();
