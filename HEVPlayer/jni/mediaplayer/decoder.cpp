@@ -21,7 +21,7 @@ int Decoder::outqueue(AVPacket* packet) {
 	return mQueue->get(packet, mBlock);
 }
 
-int Decoder::queneSize() {
+int Decoder::queueSize() {
 	return mQueue->size();
 }
 

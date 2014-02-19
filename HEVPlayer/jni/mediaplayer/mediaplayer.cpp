@@ -37,6 +37,8 @@ static double tstart = 0;
 static int frames = 0;
 static double tlast = 0;
 
+static AVPacket flush_pkt;
+
 uint32_t getms() {
 	struct timeval t;
 	gettimeofday(&t, NULL);
@@ -101,6 +103,9 @@ MediaPlayer::MediaPlayer() {
 	start_count = 0;
 	firstKeyFrame = 0;
 	time_begin.tv_sec = 0;
+
+	av_init_packet(&flush_pkt);
+	flush_pkt.data = (uint8_t*) "FLUSH";
 
 	mCurrentState = MEDIA_PLAYER_INITIALIZED;
 }
@@ -338,7 +343,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		}
 
 		int size = sPlayer->mFrameQueue.size();
-		LOGD("after get, video frame quene size: %d \n", size);
+		LOGD("after get, video frame queue size: %d \n", size);
 
 		pthread_mutex_lock(&mLock);
 		if (size < 0.6 * MAX_FRAME_QUEUE_SIZE && waiting == 1) {
@@ -361,7 +366,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 
 		delay += diff;
 		LOGD("delay: %lf (%lld)", delay, (int64_t)(delay*1000));
-		if (delay > 0) {
+		if (delay > 0 && delay < 10) {
 			usleep(delay*1000000);
 		}
 
@@ -424,7 +429,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 		// seek
 		if (needSeek) {
-			LOGD("seek posotion: %lld \n", mSeekPosition);
+			LOGI("seek posotion: %lld \n", mSeekPosition);
 
 			int stream_index = -1;
 			if (mAudioStreamIndex >= 0) {
@@ -433,33 +438,42 @@ void MediaPlayer::decodeMedia(void* ptr) {
 				stream_index = mVideoStreamIndex;
 			}
 
-			int64_t seek_target = mSeekPosition;
+			int64_t seek_target = mSeekPosition * 1000;
 			if (stream_index >= 0) {
 				seek_target = av_rescale_q(seek_target, AV_TIME_BASE_Q,
 						mFormatContext->streams[stream_index]->time_base);
 			}
 
-			LOGD("seek target: %lld \n", seek_target);
-			int ret = av_seek_frame(mFormatContext, stream_index, seek_target,
-					mSeekPosition - mCurrentPosition < 0 ? AVSEEK_FLAG_BACKWARD : 0);
+			LOGI("seek target: %lld \n", seek_target);
+			int ret = avformat_seek_file(mFormatContext, stream_index, LONG_LONG_MIN, seek_target, LONG_LONG_MAX, AVSEEK_FLAG_FRAME);
 			if (ret < 0) {
 				LOGE("error while seeking; return: %d \n", ret);
 			} else {
 				pthread_mutex_lock(&mLock);
+				// flush the packet queue
 				if (mAudioDecoder != NULL) {
 					mAudioDecoder->flushQueue();
+					mAudioDecoder->enqueue(&flush_pkt);
 				}
 				if (mVideoDecoder != NULL) {
 					mVideoDecoder->flushQueue();
-					mFrameQueue.flush();
-				}
+					mVideoDecoder->enqueue(&flush_pkt);
 
+					// flush the frame queue
+					mFrameQueue.flush();
+					if (waiting == 1) {
+						pthread_cond_signal(&mCondition);
+						waiting = 0;
+					}
+
+				}
 				mAudioDecoder->mAudioClock = mSeekPosition / 1000.0;
 				justSeek = 1;
 				pthread_mutex_unlock(&mLock);
 			}
 
 			needSeek = 0;
+			LOGI("queue size (v: %d, a: %d) \n",mVideoDecoder->queueSize(), mAudioDecoder->queueSize());
 		}
 
 		// pause
@@ -467,9 +481,9 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			// can continue decoding, so do nothing here
 		}
 
-		if (mVideoDecoder != NULL ? mVideoDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true
-				&& mAudioDecoder != NULL ? mAudioDecoder->queneSize() > MAX_VP_QUEUE_SIZE : true) {
-			LOGD("two many packets, have a rest \n");
+		if ((mVideoDecoder != NULL ? mVideoDecoder->queueSize() > MAX_VP_QUEUE_SIZE : true)
+				&& (mAudioDecoder != NULL ? mAudioDecoder->queueSize() > MAX_AP_QUEUE_SIZE : true)) {
+			LOGI("two many packets(v: %d, a: %d), have a rest \n",mVideoDecoder->queueSize(), mAudioDecoder->queueSize());
 			sleep(1);
 			continue;
 		}
@@ -493,10 +507,10 @@ void MediaPlayer::decodeMedia(void* ptr) {
 		// a packet from the video stream?
 		if (packet->stream_index == mVideoStreamIndex) {
 			mVideoDecoder->enqueue(packet);
-			//LOGD("enqueue a video packet; queue size: %d \n", mVideoDecoder->queneSize());
+			LOGD("enqueue a video packet; queue size: %d \n", mVideoDecoder->queueSize());
 		} else if (packet->stream_index == mAudioStreamIndex) {
 			mAudioDecoder->enqueue(packet);
-			//LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queneSize());
+			LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queueSize());
 		} else {
 			LOGE("not video or audio packet \n");
 			pthread_mutex_lock(&mLock);

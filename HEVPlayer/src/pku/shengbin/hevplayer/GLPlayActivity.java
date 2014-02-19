@@ -65,7 +65,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	}
 	
 	public void seekTo(int pos) {
-		//mPlayer.seekTo(pos);
+		mPlayer.seekTo(pos);
 	}
 	
 	public void pause() {
@@ -96,11 +96,11 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	}
 
 	public boolean canSeekBackward() {
-		return false;
+		return true;
 	}
 
 	public boolean canSeekForward() {
-		return false;
+		return true;
 	}
 	
 	
@@ -167,7 +167,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 					        .getY(0), event.getX(1), event.getY(1));
 					if (distance - mStartDistance > 10) {
 						zoomLarge();
-					}else if (distance - mStartDistance < -10) {
+					} else if (distance - mStartDistance < -10) {
 						zoomSmall();
 					}				
 					mStartDistance = distance;
@@ -175,9 +175,9 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
             }
        } else {
         	mStartTwoTouchPoint = false;
-        	if(event.getPointerCount() == 1 && event.getY() > this.getResources().getDisplayMetrics().heightPixels - 40){
-        		if(mMediaController != null)
-	        		if(!mMediaController.isShowing()) {
+        	if (event.getPointerCount() == 1 && event.getY() > this.getResources().getDisplayMetrics().heightPixels * 0.2) {
+        		if (mMediaController != null)
+	        		if (mMediaController.isShowing() == false) {
 		    			mMediaController.show(3000);
 		    		}
         	}

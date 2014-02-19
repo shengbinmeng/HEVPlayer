@@ -29,7 +29,7 @@ int VideoDecoder::process(AVPacket *packet) {
 		LOGE("decode video packet failed \n");
 	}
 
-	LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
+	//LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
 
 	if (gotFrame) {
 		if (mFrame->pts != AV_NOPTS_VALUE) {
@@ -64,7 +64,7 @@ int VideoDecoder::decode(void* ptr) {
 			LOGD("FLUSH");
 			continue;
 		}
-		LOGD("out queue a video packet; queue size: %d \n", this->queneSize());
+		LOGD("out queue a video packet; queue size: %d \n", this->queueSize());
 		if (process(&packet) != 0) {
 			LOGE("process video packet failed \n");
 			mRunning = false;

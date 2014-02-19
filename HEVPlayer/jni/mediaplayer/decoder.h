@@ -16,7 +16,7 @@ public:
 
 	int enqueue(AVPacket* packet);
 	int outqueue(AVPacket* packet);
-	int queneSize();
+	int queueSize();
 	void flushQueue();
 	void stop();
 	void endQueue();

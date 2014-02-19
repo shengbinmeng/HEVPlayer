@@ -55,7 +55,7 @@ int AudioDecoder::process(AVPacket *packet) {
 			mAudioClock += inc;
 		}
 
-		LOGD("output an audio frame: %d * %d * (%d->2) = %d, mAudioClock: %lf", mFrame->channels, mFrame->nb_samples, bps, size, mAudioClock);
+		LOGD("output an audio frame, mAudioClock: %lf", mAudioClock);
 
 #if 1
 		// conversion using swresample
@@ -135,7 +135,7 @@ int AudioDecoder::decode(void* ptr) {
 			continue;
         }
 
-		LOGD("out queue an audio packet; queue size: %d \n", this->queneSize());
+		LOGD("out queue an audio packet; queue size: %d \n", this->queueSize());
         if (process(&packet) != 0) {
 			LOGE("process audio packet failed \n");
 			mRunning = false;
