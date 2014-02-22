@@ -1,8 +1,17 @@
 package pku.shengbin.hevplayer;
 
 import java.io.File;
+
+import pku.shengbin.hevplayer.LocalExploreActivity;
+import pku.shengbin.hevplayer.R;
+import pku.shengbin.hevplayer.R.drawable;
+import pku.shengbin.hevplayer.R.id;
+import pku.shengbin.hevplayer.R.layout;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,7 +19,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-class LocalExplorerAdapter extends BaseAdapter {
+public class LocalExplorerAdapter extends BaseAdapter {
 	
 	private File[] 							mFiles;
 	private LayoutInflater 					mInflater;
@@ -55,6 +64,14 @@ class LocalExplorerAdapter extends BaseAdapter {
 				d = mContext.getResources().getDrawable(R.drawable.ic_menu_block);
 			}
 			holder.icon.setImageDrawable(d);
+			Bitmap bitmap = null;
+			bitmap = createVideoThumbnail(file.getPath());
+			if(bitmap != null)
+				holder.icon.setImageBitmap(bitmap);
+			else
+			{
+				Log.v("test0", "null");
+			}
 		}
 	}
 
@@ -92,4 +109,26 @@ class LocalExplorerAdapter extends BaseAdapter {
 	    TextView text;
 	    ImageView icon;
 	}
+    private Bitmap createVideoThumbnail(String filePath) {
+        Bitmap bitmap = null;
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        try {
+            //retriever.set
+            retriever.setDataSource(filePath);
+            Log.v("test1", filePath);
+            bitmap = retriever.getFrameAtTime();
+        } catch(IllegalArgumentException ex) {
+            // Assume this is a corrupt video file
+        } catch (RuntimeException ex) {
+            // Assume this is a corrupt video file.
+        } finally {
+            try {
+                retriever.release();
+            } catch (RuntimeException ex) {
+                // Ignore failures while cleaning up.
+            }
+        }
+        return bitmap;
+    }
 }
+
