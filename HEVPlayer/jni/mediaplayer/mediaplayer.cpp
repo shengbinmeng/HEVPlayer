@@ -366,7 +366,6 @@ void MediaPlayer::renderVideo(void* ptr) {
 		double tnow = timeNow.tv_sec + (timeNow.tv_usec / 1000000.0);
 		if (tlast == 0) tlast = tnow;
 		if (tstart == 0) tstart = tnow;
-		LOGI("%f, %f, %f, %d", tnow, tlast, tstart, frames);
 		if (tnow > tlast + 1) {
 			frames_sum += frames;
 			double avg_fps = frames_sum / (tnow - tstart);
