@@ -13,7 +13,7 @@
 	#define __STDC_FORMAT_MACROS
 #endif
 
-#define ENABLE_LOGD 1
+#define ENABLE_LOGD 0
 
 #if ENABLE_LOGD
 #define LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
