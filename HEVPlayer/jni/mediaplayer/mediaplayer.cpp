@@ -22,16 +22,8 @@ extern "C" {
 static MediaPlayer* sPlayer;
 static MediaPlayerListener* sListener;
 
-static int justSeek = 0;
 static int needSeek = 0;
 static int waiting = 0;
-static int begin = 0;
-static int alert = 0;
-static int video_lack = 0;
-static int start_count = 0;
-static int firstKeyFrame = 0;
-static struct timeval time_begin;
-
 static int frames_sum = 0;
 static double tstart = 0;
 static int frames = 0;
@@ -94,15 +86,11 @@ MediaPlayer::MediaPlayer() {
 	av_log_set_callback(ffmpeg_log_callback);
 
 	sPlayer = this;
-	justSeek = 0;
 	needSeek = 0;
 	waiting = 0;
-	begin = 0;
-	alert = 0;
-	video_lack = 0;
-	start_count = 0;
-	firstKeyFrame = 0;
-	time_begin.tv_sec = 0;
+	tstart = 0;
+	frames = 0;
+	tlast = 0;
 
 	av_init_packet(&flush_pkt);
 	flush_pkt.data = (uint8_t*) "FLUSH";
@@ -378,12 +366,12 @@ void MediaPlayer::renderVideo(void* ptr) {
 		double tnow = timeNow.tv_sec + (timeNow.tv_usec / 1000000.0);
 		if (tlast == 0) tlast = tnow;
 		if (tstart == 0) tstart = tnow;
+		LOGI("%f, %f, %f, %d", tnow, tlast, tstart, frames);
 		if (tnow > tlast + 1) {
-			double avg_fps;
 			frames_sum += frames;
-			avg_fps = frames_sum / (tnow - tstart);
-			LOGI("Video Display FPS: %i, average: %.2lf", (int)frames, avg_fps);
-			sListener->postEvent(900, int(frames), int(avg_fps * 4096));
+			double avg_fps = frames_sum / (tnow - tstart);
+			LOGI("Video Display FPS: %d, average: %.2lf", frames, avg_fps);
+			sListener->postEvent(900, frames, int(avg_fps * 4096));
 			tlast = tlast + 1;
 			frames = 0;
 		}
@@ -468,7 +456,6 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 				}
 				mAudioDecoder->mAudioClock = mSeekPosition / 1000.0;
-				justSeek = 1;
 				pthread_mutex_unlock(&mLock);
 			}
 

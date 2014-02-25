@@ -63,11 +63,8 @@ public class LocalExplorerAdapter extends BaseAdapter {
 			holder.icon.setImageDrawable(d);
 			Bitmap bitmap = null;
 			bitmap = createVideoThumbnail(file.getPath());
-			if(bitmap != null)
+			if(bitmap != null) {
 				holder.icon.setImageBitmap(bitmap);
-			else
-			{
-				Log.v("test0", "null");
 			}
 		}
 	}
