@@ -4,9 +4,6 @@ import java.io.File;
 
 import pku.shengbin.hevplayer.LocalExploreActivity;
 import pku.shengbin.hevplayer.R;
-import pku.shengbin.hevplayer.R.drawable;
-import pku.shengbin.hevplayer.R.id;
-import pku.shengbin.hevplayer.R.layout;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
