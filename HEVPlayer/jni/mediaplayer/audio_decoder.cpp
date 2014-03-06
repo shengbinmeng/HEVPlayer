@@ -57,7 +57,6 @@ int AudioDecoder::process(AVPacket *packet) {
 
 		LOGD("output an audio frame, mAudioClock: %lf", mAudioClock);
 
-#if 1
 		// conversion using swresample
 		if (mSwrContext == NULL) {
 			// Set up SWR context once you've got codec information
@@ -81,37 +80,6 @@ int AudioDecoder::process(AVPacket *packet) {
 		if (ret != mFrame->nb_samples) {
 			LOGE("conversion wrong \n");
 		}
-#else
-		// my conversion
-		if (mFrame->format == AV_SAMPLE_FMT_FLTP) {
-			int nb_samples = mFrame->nb_samples;
-			int channels = mFrame->channels;
-			short *samples = (short*) mSamples;
-			for (int i = 0; i < nb_samples; i++) {
-				 for (int c = 0; c < channels; c++) {
-					 float* extended_data = (float*)mFrame->extended_data[c];
-					 float sample = extended_data[i];
-					 if (sample < -1.0f) {
-						 sample = -1.0f;
-					 } else if (sample > 1.0f) {
-						 sample = 1.0f;
-					 }
-					 samples[i * channels + c] = (short)round(sample * 32767.0f);
-				 }
-			}
-		} else if (mFrame->format == AV_SAMPLE_FMT_S16P) {
-			int nb_samples = mFrame->nb_samples;
-			int channels = mFrame->channels;
-			short *samples = (short*) mSamples;
-			for (int i = 0; i < nb_samples; i++) {
-				 for (int c = 0; c < channels; c++) {
-					 short* extended_data = (short*)mFrame->extended_data[c];
-					 short sample = extended_data[i];
-					 samples[i * channels + c] = sample;
-				 }
-			}
-		}
-#endif
 
 		// call handler for posting buffer to os audio driver
 	    onDecoded(mSamples, size);

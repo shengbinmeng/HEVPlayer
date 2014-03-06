@@ -1,5 +1,3 @@
-// OpenGL ES 2.0 code
-
 #include <jni.h>
 #include <android/log.h>
 

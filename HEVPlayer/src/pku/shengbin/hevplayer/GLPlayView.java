@@ -163,7 +163,6 @@ public class GLPlayView extends GLSurfaceView {
 
         private int findConfigAttrib(EGL10 egl, EGLDisplay display,
                 EGLConfig config, int attribute, int defaultValue) {
-
             if (egl.eglGetConfigAttrib(display, config, attribute, mValue)) {
                 return mValue[0];
             }
@@ -256,7 +255,7 @@ public class GLPlayView extends GLSurfaceView {
             for (int i = 0; i < attributes.length; i++) {
                 int attribute = attributes[i];
                 String name = names[i];
-                if ( egl.eglGetConfigAttrib(display, config, attribute, value)) {
+                if (egl.eglGetConfigAttrib(display, config, attribute, value)) {
                     Log.d(TAG, String.format("  %s: %d\n", name, value[0]));
                 } else {
                     Log.w(TAG, String.format("  %s: failed\n", name));

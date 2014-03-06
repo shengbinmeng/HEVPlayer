@@ -27,7 +27,6 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     private double 	mStartDistance;
     private double 	mZoomScale = 1;
     private int		mError = 0;
-
     
 	//////////////////////////////////////////
 	//implements SurfaceHolder.Callback
@@ -103,7 +102,9 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 		return true;
 	}
 	
-	
+	public int getAudioSessionId() {
+		return 0;
+	}
 	//end of : implements MediaPlayerControl
 	//////////////////////////////////////////
 	
@@ -151,8 +152,6 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 			mError = 1;
 		}
     }
-    
-    
 
 	@Override
     public boolean onTouchEvent(android.view.MotionEvent event) {
@@ -191,10 +190,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     public static final int MENU1 = Menu.FIRST;    
 	public static final int MENU2 = Menu.FIRST + 1; 
     public static final int MENU3 = Menu.FIRST + 2;
-    public static final int MENU4 = Menu.FIRST + 3;
-    public static final int MENU5 = Menu.FIRST + 4;
-    public static final int MENU6 = Menu.FIRST + 5;
-
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -244,7 +240,6 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 
     /////////////////////////////////////////////////////
     //utility functions 
-    
     private void attachMediaController() {
     	mMediaController = new MediaController(this);
         mMediaController.setMediaPlayer(this);
@@ -252,8 +247,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
         mMediaController.setEnabled(true);
     }
     
-    private void setDisplaySizeVideo()
-    {
+    private void setDisplaySizeVideo() {
     	getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
     	
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
@@ -278,8 +272,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
  		mPlayer.setDisplaySize(displayWidth, displayHeight);
     }
     
-    private void setDisplaySizeFullScreen()
-    {
+    private void setDisplaySizeFullScreen() {
     	getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
     	
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
@@ -300,8 +293,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
  		mPlayer.setDisplaySize(displayWidth, displayHeight);
     }
     
-    
-    private static double getDistance(double x1, double y1, double x2, double y2) {
+    private double getDistance(double x1, double y1, double x2, double y2) {
         return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
     
@@ -321,6 +313,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
  		mPlayer.setDisplaySize(displayWidth, displayHeight);
     }
+    
     private void zoomSmall() {
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
  		int screenWidth = 0, screenHeight = 0, displayWidth = 0, displayHeight = 0;
@@ -342,11 +335,5 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	mPlayer.setDisplaySize(displayWidth, displayHeight);
     }
     // end of: utility functions 
-    //////////////////////////////////////////////   
-
-	public int getAudioSessionId() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-   
+    //////////////////////////////////////////////
 }

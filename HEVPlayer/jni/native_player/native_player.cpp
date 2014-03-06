@@ -1,4 +1,3 @@
-
 #include <jni.h>
 #include "jni_utils.h"
 #include "mediaplayer.h"

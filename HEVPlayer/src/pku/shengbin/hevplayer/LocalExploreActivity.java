@@ -24,7 +24,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,8 +40,7 @@ public class LocalExploreActivity extends ListActivity {
 	private TextView 		mTextViewLocation;
 	private File[]			mFiles;
 	
-	static String[] exts = {"hevc", "hm91", "hm10", "bit", "hvc", "h265", "265", "flv", "ts",
-		"mp3", "mp4", "rmvb"};
+	static String[] exts = {".avi",".mp4",".m4v",".mkv",".mp3",".flv",".rm",".rmvb",".wmv",".wma",".3gp",".mov",".mpg",".asf"};
     
    @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -99,7 +97,7 @@ public class LocalExploreActivity extends ListActivity {
 	            	for (int i = 0; i < LocalExploreActivity.exts.length; i++) {
 	            		if (name.endsWith(LocalExploreActivity.exts[i])) return true;
 	            	}
-					return false; 	
+					return false;
 	            }
 
 				public boolean accept(File file) {
@@ -162,15 +160,8 @@ public class LocalExploreActivity extends ListActivity {
 	
 	private void startPlayer(String filePath, int mediaType) {
     	Intent i = new Intent(this, GLPlayActivity.class);
-    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(LocalExploreActivity.this);  
-        boolean useGL = settings.getBoolean("opengl_switch", true);
-        if (!useGL) {
-        	i = new Intent(this, GLPlayActivity.class);
-        	Log.i("HEVPlayer", "will play without OpenGL rendering");
-        }
     	i.putExtra("pku.shengbin.hevplayer.strMediaPath", filePath);
     	i.putExtra("pku.shengbin.hevplayer.intMediaType", mediaType);
-    	
     	startActivity(i);
     }
 	
