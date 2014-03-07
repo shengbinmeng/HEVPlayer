@@ -126,7 +126,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 	    RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 	    lp.addRule(RelativeLayout.ALIGN_TOP);
 	    tv.setLayoutParams(lp);
-	    tv.setText("FPS: 0");
+	    tv.setText("");
 	    tv.setTextSize(20);
 	    tv.setTextColor(Color.WHITE);
 	    rl.addView(tv);
