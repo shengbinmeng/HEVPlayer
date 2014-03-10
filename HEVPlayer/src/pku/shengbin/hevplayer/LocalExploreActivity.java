@@ -42,7 +42,7 @@ public class LocalExploreActivity extends ListActivity {
 	
 	static String[] exts = {".avi",".mp4",".m4v",".mkv",".mp3",".flv",".rm",".rmvb",".wmv",".wma",".3gp",".mov",".mpg",".asf"};
     
-   @Override
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
@@ -56,6 +56,14 @@ public class LocalExploreActivity extends ListActivity {
 		} else {
 			getDirectory(currentDir);
 		}
+		//generateJPG();
+		
+		File frameCache = new File(mRoot + "/hevplayer");
+		if( !frameCache.exists() )
+		{
+			frameCache.mkdir();
+		}
+		//getframe("/sdcard/test.jpg");
 	}
    
 	
