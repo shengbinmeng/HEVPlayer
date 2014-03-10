@@ -27,7 +27,11 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     private double 	mStartDistance;
     private double 	mZoomScale = 1;
     private int		mError = 0;
-    
+
+    String moviePath;
+    TextView display_tv;
+    int screenWidth, screenHeight, displayWidth = 0, displayHeight = 0;
+
 	//////////////////////////////////////////
 	//implements SurfaceHolder.Callback
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
@@ -47,12 +51,14 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	if (mError != 0) {
     		return ;
     	}
+    	
 		mPlayer.stop();
 		if(mMediaController != null && mMediaController.isShowing()) {
 			mMediaController.hide();
 		}
 		mPlayer.close();
 		this.finish();
+		
     }
     // end of: implements SurfaceHolder.Callback
     /////////////////////////////////////////////
@@ -122,22 +128,22 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
 		
 		RelativeLayout rl = new RelativeLayout(this);
 	    rl.addView(mGLSurfaceView);        
-	    TextView tv = new TextView(this);
+	    display_tv = new TextView(this);
 	    RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 	    lp.addRule(RelativeLayout.ALIGN_TOP);
-	    tv.setLayoutParams(lp);
-	    tv.setText("");
-	    tv.setTextSize(20);
-	    tv.setTextColor(Color.WHITE);
-	    rl.addView(tv);
+	    display_tv.setLayoutParams(lp);
+	    display_tv.setText("");
+	    display_tv.setTextSize(20);
+	    display_tv.setTextColor(Color.WHITE);
+	    rl.addView(display_tv);
 
 	    this.setContentView(rl);
 	    
 		mError = 0;
 		mPlayer = new MediaPlayer(this);
     	
-    	String moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
-		mPlayer.setDisplay(mGLSurfaceView, tv);
+    	moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
+		mPlayer.setDisplay(mGLSurfaceView, display_tv);
 		
 		int ret = mPlayer.open(moviePath);
 		if (ret != 0) {
@@ -276,7 +282,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
     	
     	int videoWidth = mPlayer.getVideoWidth(), videoHeight = mPlayer.getVideoHeight();
- 		int screenWidth, screenHeight, displayWidth = 0, displayHeight = 0;
+ 		//int screenWidth, screenHeight, displayWidth = 0, displayHeight = 0;
  		screenWidth = this.getResources().getDisplayMetrics().widthPixels;
  		screenHeight = this.getResources().getDisplayMetrics().heightPixels;
  		
@@ -335,5 +341,32 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback, 
     	mPlayer.setDisplaySize(displayWidth, displayHeight);
     }
     // end of: utility functions 
-    //////////////////////////////////////////////
+    //////////////////////////////////////////////   
+
+   
+	public void replay()
+	{
+		mPlayer.close();
+		mPlayer = new MediaPlayer(this);
+    	
+    	moviePath = this.getIntent().getStringExtra("pku.shengbin.hevplayer.strMediaPath");
+		mPlayer.setDisplay(mGLSurfaceView, display_tv);
+		
+		int ret = mPlayer.open(moviePath);
+		if (ret != 0) {
+			MessageBox.show(this, "Oops!","open media failed! Please check your file or network connection.",
+				new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface arg0, int arg1) {
+					GLPlayActivity.this.finish();
+				}
+		    	}
+			);
+			
+			mError = 1;
+		}
+ 		//setDisplaySizeVideo();
+		mPlayer.setDisplaySize(displayWidth, displayHeight);
+		//attachMediaController();
+    	mPlayer.start();
+	}
 }

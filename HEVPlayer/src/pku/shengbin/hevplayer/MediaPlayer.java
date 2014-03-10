@@ -15,6 +15,7 @@ import android.widget.TextView;
 public class MediaPlayer { 
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
     public static final int MEDIA_INFO_END_OF_FILE = 909;
+    public static final int MEDIA_INFO_CLOSE_VIDEO = 910;
 
     private static Activity mOwnerActivity = null;
     private static Surface mSurface = null;
@@ -187,6 +188,11 @@ public class MediaPlayer {
     		}
     		break;
     	case MEDIA_INFO_END_OF_FILE:
+    		//mOwnerActivity.finish();
+    		((GLPlayActivity)mOwnerActivity).replay();
+    		break;
+    		
+    	case MEDIA_INFO_CLOSE_VIDEO:
     		mOwnerActivity.finish();
     		break;
     	}
