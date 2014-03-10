@@ -30,6 +30,8 @@ static int frames = 0;
 static double tlast = 0;
 
 static AVPacket flush_pkt;
+//wjx modified
+static bool isStopped = 0;
 
 uint32_t getms() {
 	struct timeval t;
@@ -91,7 +93,7 @@ MediaPlayer::MediaPlayer() {
 	tstart = 0;
 	frames = 0;
 	tlast = 0;
-
+	isStopped = 0;
 	av_init_packet(&flush_pkt);
 	flush_pkt.data = (uint8_t*) "FLUSH";
 
@@ -229,7 +231,7 @@ int MediaPlayer::open(char* file) {
 }
 
 int MediaPlayer::close() {
-
+	LOGI("closing");
 	// close codecs
 	if (mAudioStreamIndex != -1) {
 		avcodec_close(mFormatContext->streams[mAudioStreamIndex]->codec);
@@ -393,6 +395,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		LOGE("join decoding thread failed \n");
 	}
 	LOGI("end of rendering thread \n");
+	LOGI("isClosed %d",(int)isStopped);
 	mCurrentState = MEDIA_PLAYER_PLAYBACK_COMPLETE;
 }
 
@@ -538,7 +541,10 @@ void* MediaPlayer::startDecoding(void* ptr) {
 void* MediaPlayer::startRendering(void* ptr) {
 	sPlayer->renderVideo(ptr);
 	// tell the play activity to finish
-	sListener->postEvent(909, 0, 0);
+	if(!isStopped)
+		sListener->postEvent(909, 0, 0);
+	else
+		sListener->postEvent(910, 0, 0);
 	detachJVM();
 	return NULL;
 }
@@ -594,10 +600,11 @@ int MediaPlayer::go() {
 
 // stop and release all the resources
 int MediaPlayer::stop() {
+	LOGI("start stopping \n");
 	if (mCurrentState == MEDIA_PLAYER_STOPPED || mCurrentState < MEDIA_PLAYER_PREPARED) {
 		return 0;
 	}
-
+	isStopped = 1;
 	if (mCurrentState == MEDIA_PLAYER_PAUSED) {
 		// notify the waiting threads
 		pthread_mutex_lock(&mLock);
