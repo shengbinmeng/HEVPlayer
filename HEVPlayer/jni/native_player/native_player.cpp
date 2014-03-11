@@ -81,7 +81,7 @@ static void MediaPlayer_getAudioParams(JNIEnv *env, jobject thiz, jintArray para
 {
 	int p[3] = {0, 0, 0};
 	gMP->getAudioParams(p);
-	LOGD("audio parameters: %d %d %d", p[0], p[1], p[2]);
+	LOGD("audio parameters: %d %d %d \n", p[0], p[1], p[2]);
 	int *nativeParams;
 	nativeParams = (int*)env->GetIntArrayElements(params, NULL);
 	nativeParams[0] = p[0];

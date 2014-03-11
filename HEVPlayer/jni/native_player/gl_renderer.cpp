@@ -58,7 +58,7 @@ static const char gFragmentShader[] =
 
 static void printGLString(const char *name, GLenum s) {
     const char *v = (const char *) glGetString(s);
-    LOGI("GL %s = %s\n", name, v);
+    LOGI("GL %s = %s \n", name, v);
 }
 
 static GLuint loadShader(GLenum shaderType, const char* pSource) {
@@ -187,7 +187,7 @@ static int init()
 
 static int setupGraphics(int w, int h) {
 
-    LOGI("setupGraphics(%d, %d)", w, h);
+    LOGI("setupGraphics(%d, %d) \n", w, h);
 
 	backingWidth = w;
 	backingHeight = h;
@@ -201,12 +201,13 @@ void drawFrame() {
 	pthread_mutex_lock(&gVFMutex);
 
 	if (gVF == NULL) {
-		LOGI("gVF == NULL");
+		LOGI("gVF == NULL \n");
 		pthread_mutex_unlock(&gVFMutex);
 		return;
 	}
 
 	if (needSetup) {
+		LOGI("setting up \n");
 
 		GLuint width = gVF->width;
 		GLuint height = gVF->height;
@@ -220,12 +221,20 @@ void drawFrame() {
 			vertexPositions[1] = vertexPositions[4] = - maxY;
 			vertexPositions[7] = vertexPositions[10] = maxY;
 
+			// restore other values that may be changed before
+			vertexPositions[0] = vertexPositions[6] = - 1.0;
+			vertexPositions[3] = vertexPositions[9] = 1.0;
+
 		} else {
 			// fill screen in height, and leave space in X
 			float scale = (float) backingHeight / (float) height;
 			float maxX = ((float) width * scale) / (float) backingWidth;
 			vertexPositions[0] = vertexPositions[6] = - maxX;
 			vertexPositions[3] = vertexPositions[9] = maxX;
+
+			// restore other values that may be changed before
+			vertexPositions[1] = vertexPositions[4] = - 1.0;
+			vertexPositions[7] = vertexPositions[10] = 1.0;
 		}
 
 		// modify the texture coordinates
@@ -238,7 +247,7 @@ void drawFrame() {
 
 		glViewport(0, 0, backingWidth, backingHeight);
 
-		LOGI("setup finished\n");
+		LOGI("setup finished \n");
 
 		needSetup = 0;
 	}
@@ -261,7 +270,7 @@ void drawFrame() {
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    LOGD("after glDrawArrays: %u (%f)", getms(), gVF->pts);
+    LOGD("after glDrawArrays: %u (%f) \n", getms(), gVF->pts);
 
     if (gVF != NULL) {
 		free(gVF->yuv_data[0]);
@@ -275,7 +284,7 @@ jint nativeInit(JNIEnv * env, jobject obj)
 {
 	int ret = init();
 	if (ret < 0) {
-		LOGE("initialize failed!");
+		LOGE("initialize failed! \n");
 	}
 	return ret;
 }
@@ -284,7 +293,7 @@ jint nativeSetup(JNIEnv * env, jobject obj,  jint width, jint height)
 {
 	int ret = setupGraphics(width, height);
 	if (ret < 0) {
-		LOGE("setup failed!");
+		LOGE("setup failed! \n");
 	}
 	return ret;
 }
