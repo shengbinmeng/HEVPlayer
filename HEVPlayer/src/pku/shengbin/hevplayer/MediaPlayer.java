@@ -188,14 +188,8 @@ public class MediaPlayer {
     		}
     		break;
     	case MEDIA_INFO_END_OF_FILE:
-    		//mOwnerActivity.finish();
-    		((GLPlayActivity)mOwnerActivity).replay();
-    		break;
-    		
-    	case MEDIA_INFO_CLOSE_VIDEO:
     		mOwnerActivity.finish();
     		break;
     	}
-    }
-
+	}
 }

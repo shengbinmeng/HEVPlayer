@@ -14,8 +14,9 @@ extern "C" {
 
 #define LOG_TAG "MediaPlayer"
 
-#define MAX_AP_QUEUE_SIZE (1 * 128)
-#define MAX_VP_QUEUE_SIZE (1 * 128)
+#define LOOP_PLAY 1
+#define MAX_AP_QUEUE_SIZE (2 * 128)
+#define MAX_VP_QUEUE_SIZE (2 * 128)
 #define MAX_FRAME_QUEUE_SIZE 100
 #define TIMEOUT_MS 5000
 
@@ -231,7 +232,7 @@ int MediaPlayer::open(char* file) {
 }
 
 int MediaPlayer::close() {
-	LOGI("closing");
+	LOGI("closing \n");
 	// close codecs
 	if (mAudioStreamIndex != -1) {
 		avcodec_close(mFormatContext->streams[mAudioStreamIndex]->codec);
@@ -243,6 +244,7 @@ int MediaPlayer::close() {
 	// close the video file
 	avformat_close_input(&mFormatContext);
 
+	LOGI("closed \n");
 	return 0;
 }
 
@@ -395,7 +397,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		LOGE("join decoding thread failed \n");
 	}
 	LOGI("end of rendering thread \n");
-	LOGI("isClosed %d",(int)isStopped);
+
 	mCurrentState = MEDIA_PLAYER_PLAYBACK_COMPLETE;
 }
 
@@ -470,9 +472,15 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			// can continue decoding, so do nothing here
 		}
 
-		if ((mVideoDecoder != NULL ? mVideoDecoder->queueSize() > MAX_VP_QUEUE_SIZE : true)
-				&& (mAudioDecoder != NULL ? mAudioDecoder->queueSize() > MAX_AP_QUEUE_SIZE : true)) {
-			LOGI("two many packets(v: %d, a: %d), have a rest \n",mVideoDecoder->queueSize(), mAudioDecoder->queueSize());
+		int aq_size = -1, vq_size = -1;
+		if (mVideoDecoder != NULL) {
+			vq_size = mVideoDecoder->queueSize();
+		}
+		if (mAudioDecoder != NULL) {
+			aq_size = mAudioDecoder->queueSize();
+		}
+		if (vq_size > MAX_VP_QUEUE_SIZE || aq_size > MAX_AP_QUEUE_SIZE) {
+			LOGI("two many packets(v: %d, a: %d), have a rest \n", vq_size, aq_size);
 			sleep(1);
 			continue;
 		}
@@ -481,6 +489,23 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 		if (ret < 0) {
 			LOGE("av_read_frame failed, end of file\n");
+
+#if LOOP_PLAY
+			if (mCurrentState != MEDIA_PLAYER_STOPPED) {
+				if (avformat_seek_file(mFormatContext, mVideoStreamIndex, LONG_LONG_MIN, 0, LONG_LONG_MAX, AVSEEK_FLAG_FRAME) < 0) {
+					LOGD("avformat_seek_file error, will try av_seek_frame\n");
+					if (av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+						LOGE("av_seek_frame error, can not auto-replay\n");
+					} else {
+						LOGI("automatically play again, after seek frame\n");
+						continue;
+					}
+				} else {
+					LOGI("automatically play again, after seek file\n");
+					continue;
+				}
+			}
+#endif
 			if (mAudioDecoder != NULL) {
 				mAudioDecoder->endQueue();
 			}
@@ -600,10 +625,11 @@ int MediaPlayer::go() {
 
 // stop and release all the resources
 int MediaPlayer::stop() {
-	LOGI("start stopping \n");
 	if (mCurrentState == MEDIA_PLAYER_STOPPED || mCurrentState < MEDIA_PLAYER_PREPARED) {
 		return 0;
 	}
+	LOGI("stopping \n");
+
 	isStopped = 1;
 	if (mCurrentState == MEDIA_PLAYER_PAUSED) {
 		// notify the waiting threads
@@ -618,8 +644,6 @@ int MediaPlayer::stop() {
 			mVideoDecoder->notify();
 		}
 	}
-
-	LOGI("stopping \n");
 
 	pthread_mutex_lock(&mLock);
 	mCurrentState = MEDIA_PLAYER_STOPPED;
