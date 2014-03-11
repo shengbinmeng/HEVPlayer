@@ -14,7 +14,6 @@ extern "C" {
 
 #define LOG_TAG "MediaPlayer"
 
-#define LOOP_PLAY 1
 #define MAX_AP_QUEUE_SIZE (2 * 128)
 #define MAX_VP_QUEUE_SIZE (2 * 128)
 #define MAX_FRAME_QUEUE_SIZE 100
@@ -22,21 +21,7 @@ extern "C" {
 
 static MediaPlayer* sPlayer;
 static MediaPlayerListener* sListener;
-
-static int needSeek = 0;
-static int waiting = 0;
-static int frames_sum = 0;
-static double tstart = 0;
-static int frames = 0;
-static double tlast = 0;
-
-static AVPacket flush_pkt;
-
-uint32_t getms() {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	return (t.tv_sec * 1000) + (t.tv_usec / 1000);
-}
+static int sWaiting = 0;
 
 // ffmpeg calls this back, used for log
 static void ffmpeg_log_callback (void* ptr, int level, const char* fmt, va_list vl) {
@@ -85,17 +70,20 @@ MediaPlayer::MediaPlayer() {
 	//initialize ffmpeg
 	av_register_all();
 	av_log_set_callback(ffmpeg_log_callback);
+	av_init_packet(&mFlushPacket);
+	mFlushPacket.data = (uint8_t*) "FLUSH";
 
-	sPlayer = this;
-	needSeek = 0;
-	waiting = 0;
-	tstart = 0;
-	frames = 0;
-	tlast = 0;
-	av_init_packet(&flush_pkt);
-	flush_pkt.data = (uint8_t*) "FLUSH";
+	mNeedSeek = 0;
+	sWaiting = 0;
+	mTimeStart = 0;
+	mFrames = 0;
+	mTimeLast = 0;
+	mThreadNumber = 0;
+	mLoopPlay = 0;
 
 	mCurrentState = MEDIA_PLAYER_INITIALIZED;
+
+	sPlayer = this;
 }
 
 MediaPlayer::~MediaPlayer() {
@@ -257,6 +245,12 @@ int MediaPlayer::setThreadNumber(int num) {
 	return 0;
 }
 
+int MediaPlayer::setLoopPlay(int loop) {
+	LOGI("set loop play: %d \n", loop);
+	mLoopPlay = loop;
+	return 0;
+}
+
 // handler for receiving decoded audio buffers
 void MediaPlayer::audioOutput(void* buffer, int buffer_size) {
 	if (sPlayer->mCurrentState == MEDIA_PLAYER_PAUSED) {
@@ -294,20 +288,18 @@ void MediaPlayer::videoOutput(AVFrame* frame, double pts) {
 	vf->yuv_data[1] = vf->yuv_data[0] + vf->height * vf->linesize_y;
 	vf->yuv_data[2] = vf->yuv_data[1] + vf->height / 2 * vf->linesize_uv;
 
-	//LOGD("before copy: %u \n", getms());
 	memcpy(vf->yuv_data[0], frame->data[0], vf->height * vf->linesize_y);
 	memcpy(vf->yuv_data[1], frame->data[1], vf->height / 2 * vf->linesize_uv);
 	memcpy(vf->yuv_data[2], frame->data[2], vf->height / 2 * vf->linesize_uv);
-	//LOGD("after copy: %u \n", getms());
 
 	sPlayer->mFrameQueue.put(vf);
 	int size = sPlayer->mFrameQueue.size();
 	LOGD("after put, video frame queue size: %d \n", size);
 
 	pthread_mutex_lock(&sPlayer->mLock);
-	if (size >= MAX_FRAME_QUEUE_SIZE && waiting == 0) {
+	if (size >= MAX_FRAME_QUEUE_SIZE && sWaiting == 0) {
 		LOGD("video frames too many, pause decoding to wait \n");
-		waiting = 1;
+		sWaiting = 1;
 		pthread_cond_wait(&sPlayer->mCondition, &sPlayer->mLock);
 	}
 	pthread_mutex_unlock(&sPlayer->mLock);
@@ -335,10 +327,10 @@ void MediaPlayer::renderVideo(void* ptr) {
 		LOGD("after get, video frame queue size: %d \n", size);
 
 		pthread_mutex_lock(&mLock);
-		if (size < 0.6 * MAX_FRAME_QUEUE_SIZE && waiting == 1) {
+		if (size < 0.6 * MAX_FRAME_QUEUE_SIZE && sWaiting == 1) {
 			LOGD("video frames are consumed, notify to continue decoding \n");
 			pthread_cond_signal(&mCondition);
-			waiting = 0;
+			sWaiting = 0;
 		}
 		pthread_mutex_unlock(&mLock);
 
@@ -365,25 +357,25 @@ void MediaPlayer::renderVideo(void* ptr) {
 		struct timeval timeNow;
 		gettimeofday(&timeNow, NULL);
 		double tnow = timeNow.tv_sec + (timeNow.tv_usec / 1000000.0);
-		if (tlast == 0) tlast = tnow;
-		if (tstart == 0) tstart = tnow;
-		if (tnow > tlast + 1) {
-			frames_sum += frames;
-			double avg_fps = frames_sum / (tnow - tstart);
-			LOGI("Video Display FPS: %d, average: %.2lf", frames, avg_fps);
-			sListener->postEvent(900, frames, int(avg_fps * 4096));
-			tlast = tlast + 1;
-			frames = 0;
+		if (mTimeLast == 0) mTimeLast = tnow;
+		if (mTimeStart == 0) mTimeStart = tnow;
+		if (tnow > mTimeLast + 1) {
+			mFrameCount += mFrames;
+			double avg_fps = mFrameCount / (tnow - mTimeStart);
+			LOGI("Video Display FPS: %d, average: %.2lf", mFrames, avg_fps);
+			sListener->postEvent(900, mFrames, int(avg_fps * 4096));
+			mTimeLast = mTimeLast + 1;
+			mFrames = 0;
 		}
-		frames++;
+		mFrames++;
 	}
 
 	// if decoder is waiting, notify it to give up
-	if (waiting) {
+	if (sWaiting) {
 		LOGD("notify after the while \n");
 		pthread_mutex_lock(&mLock);
 		pthread_cond_signal(&mCondition);
-		waiting = 0;
+		sWaiting = 0;
 		pthread_mutex_unlock(&mLock);
 	}
 
@@ -417,7 +409,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 	while (mCurrentState != MEDIA_PLAYER_STOPPED && mCurrentState != MEDIA_PLAYER_STATE_ERROR) {
 
 		// seek
-		if (needSeek) {
+		if (mNeedSeek) {
 			LOGI("seek posotion: %lld \n", mSeekPosition);
 
 			int stream_index = -1;
@@ -442,17 +434,17 @@ void MediaPlayer::decodeMedia(void* ptr) {
 				// flush the packet queue
 				if (mAudioDecoder != NULL) {
 					mAudioDecoder->flushQueue();
-					mAudioDecoder->enqueue(&flush_pkt);
+					mAudioDecoder->enqueue(&mFlushPacket);
 				}
 				if (mVideoDecoder != NULL) {
 					mVideoDecoder->flushQueue();
-					mVideoDecoder->enqueue(&flush_pkt);
+					mVideoDecoder->enqueue(&mFlushPacket);
 
 					// flush the frame queue
 					mFrameQueue.flush();
-					if (waiting == 1) {
+					if (sWaiting == 1) {
 						pthread_cond_signal(&mCondition);
-						waiting = 0;
+						sWaiting = 0;
 					}
 
 				}
@@ -460,7 +452,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 				pthread_mutex_unlock(&mLock);
 			}
 
-			needSeek = 0;
+			mNeedSeek = 0;
 			LOGI("queue size (v: %d, a: %d) \n",mVideoDecoder->queueSize(), mAudioDecoder->queueSize());
 		}
 
@@ -487,22 +479,23 @@ void MediaPlayer::decodeMedia(void* ptr) {
 		if (ret < 0) {
 			LOGE("av_read_frame failed, end of file\n");
 
-#if LOOP_PLAY
-			if (mCurrentState != MEDIA_PLAYER_STOPPED) {
-				if (avformat_seek_file(mFormatContext, mVideoStreamIndex, LONG_LONG_MIN, 0, LONG_LONG_MAX, AVSEEK_FLAG_FRAME) < 0) {
-					LOGD("avformat_seek_file error, will try av_seek_frame\n");
-					if (av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD) < 0) {
-						LOGE("av_seek_frame error, can not auto-replay\n");
+			if (mLoopPlay == 1) {
+				if (mCurrentState != MEDIA_PLAYER_STOPPED) {
+					if (avformat_seek_file(mFormatContext, mVideoStreamIndex, LONG_LONG_MIN, 0, LONG_LONG_MAX, AVSEEK_FLAG_FRAME) < 0) {
+						LOGD("avformat_seek_file error, will try av_seek_frame\n");
+						if (av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD) < 0) {
+							LOGE("av_seek_frame error, can not auto-replay\n");
+						} else {
+							LOGI("automatically play again, after seek frame\n");
+							continue;
+						}
 					} else {
-						LOGI("automatically play again, after seek frame\n");
+						LOGI("automatically play again, after seek file\n");
 						continue;
 					}
-				} else {
-					LOGI("automatically play again, after seek file\n");
-					continue;
 				}
 			}
-#endif
+
 			if (mAudioDecoder != NULL) {
 				mAudioDecoder->endQueue();
 			}
@@ -611,8 +604,8 @@ int MediaPlayer::go() {
 		}
 
 		// recalculate average FPS
-		tstart = 0;
-		frames_sum = 0;
+		mTimeStart = 0;
+		mFrameCount = 0;
 	}
 	return 0;
 }
@@ -708,7 +701,7 @@ int MediaPlayer::seekTo(int msec) {
 
 	pthread_mutex_lock(&mLock);
 	mSeekPosition = msec;
-	needSeek = 1;
+	mNeedSeek = 1;
 	pthread_mutex_unlock(&mLock);
 	return 0;
 }

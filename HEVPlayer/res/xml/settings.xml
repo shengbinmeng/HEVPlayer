@@ -2,14 +2,10 @@
 <PreferenceScreen 
 	xmlns:android="http://schemas.android.com/apk/res/android" 
 	android:title="Settings">
-	<PreferenceCategory
-		android:title="About" xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="About" xmlns:android="http://schemas.android.com/apk/res/android">
 		<Preference android:title="About HEVPlayer" android:key="about_this_app"></Preference>
 	</PreferenceCategory>
-	<PreferenceCategory 
-		xmlns:android="http://schemas.android.com/apk/res/android"
-		android:title="Local File List"
-		android:summary="settings about list">
+	<PreferenceCategory android:title="Local File List" xmlns:android="http://schemas.android.com/apk/res/android">
 		<CheckBoxPreference 
 			android:title="Show media files only" 
 			android:summaryOn="only media files listed"
@@ -21,35 +17,23 @@
 			android:summaryOn="hidden files listed"
 			android:summaryOff="hidden files not listed"
 			android:defaultValue="false" android:key="show_hidden_switch">
-		</CheckBoxPreference>		
+		</CheckBoxPreference>
 	</PreferenceCategory>
-	<!--
-	<PreferenceCategory
-		android:title="Playback" xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="Playback" xmlns:android="http://schemas.android.com/apk/res/android">
 		<ListPreference
 			android:key="multi_thread"    
 			android:title="Decoder thread number"
-			android:summary="Set to multi-thread  decoding if your CPU has more cores"
+			android:summary="Set to multi-thread  decoding if your CPU has more cores (0 means auto)"
 			android:entries="@array/thread_number_options"    
 			android:entryValues="@array/thread_number_options"
 			android:dialogTitle="Select Thread Number:"    
 			android:defaultValue="0">
 		</ListPreference>
-		<ListPreference
-			android:key="render_fps"    
-			android:title="Render FPS"
-			android:summary="Set the FPS of rendering (0 means full speed)"
-			android:entries="@array/render_fps_options"    
-			android:entryValues="@array/render_fps_options"
-			android:dialogTitle="Select Render FPS:"    
-			android:defaultValue="0">
-		</ListPreference>
 		<CheckBoxPreference 
-			android:title="OpenGL render" 
-			android:summaryOn="OpenGL rendering used"
-			android:summaryOff="OpenGL rendering not used"
-			android:defaultValue="true" android:key="opengl_switch">
+			android:title="Loop play" 
+			android:summaryOn="Loop play ON"
+			android:summaryOff="Loop play OFF"
+			android:defaultValue="false" android:key="loop_play_switch">
 		</CheckBoxPreference>	
 	</PreferenceCategory>
-	 -->	
 </PreferenceScreen>

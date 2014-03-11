@@ -82,10 +82,11 @@ public class MediaPlayer {
 			Log.d("MediaPlayer", cores + " cores detected! use " + num + " threads.\n");
 		}
 		
-		float fps = Float.parseFloat(settings.getString("render_fps", "0"));
-		Log.d("MediaPlayer", "set fps:" + fps);
-		
-		int ret = native_open(path, num, fps);
+		float loop = 0;
+		if (settings.getBoolean("loop_play_switch", false)) {
+			loop = 1;
+		}
+		int ret = native_open(path, num, loop);
 		return ret;
     }
     
