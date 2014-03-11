@@ -178,10 +178,8 @@ public class LocalExplorerAdapter extends BaseAdapter {
 		}
 		@Override  
         protected void onPostExecute(String result) {
-			FileInputStream fis = null;
 			if(saved_file.exists())
 			{
-					//Bitmap bitmap  = BitmapFactory.decodeStream(fis);
 				BitmapFactory.Options opts = new BitmapFactory.Options();  
 				opts.inSampleSize = 5;  
 				Bitmap bitmap  =  BitmapFactory.decodeFile(saved_file.getPath());
