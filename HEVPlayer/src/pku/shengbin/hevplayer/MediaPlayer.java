@@ -11,10 +11,12 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Surface;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MediaPlayer { 
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
     public static final int MEDIA_INFO_END_OF_FILE = 909;
+    public static final int MEDIA_INFO_WILL_PLAY_AGAIN = 908;
 
     private static Activity mOwnerActivity = null;
     private static Surface mSurface = null;
@@ -190,6 +192,14 @@ public class MediaPlayer {
     	case MEDIA_INFO_END_OF_FILE:
     		mOwnerActivity.finish();
     		break;
-    	}
+		case MEDIA_INFO_WILL_PLAY_AGAIN:
+			mOwnerActivity.runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					Toast.makeText(mOwnerActivity, "Loop play is ON. Will play again.", Toast.LENGTH_SHORT).show();
+				}
+			});
+			break;
+		}
 	}
 }

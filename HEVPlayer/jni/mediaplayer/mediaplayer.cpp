@@ -487,10 +487,12 @@ void MediaPlayer::decodeMedia(void* ptr) {
 							LOGE("av_seek_frame error, can not auto-replay\n");
 						} else {
 							LOGI("automatically play again, after seek frame\n");
+							sListener->postEvent(908, 0, 0);
 							continue;
 						}
 					} else {
 						LOGI("automatically play again, after seek file\n");
+						sListener->postEvent(908, 0, 0);
 						continue;
 					}
 				}
@@ -549,7 +551,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 void* MediaPlayer::startDecoding(void* ptr) {
 	sPlayer->decodeMedia(ptr);
-	//detachJVM();
+	detachJVM();
 	return NULL;
 }
 
