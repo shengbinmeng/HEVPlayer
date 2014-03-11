@@ -56,14 +56,12 @@ public class LocalExploreActivity extends ListActivity {
 		} else {
 			getDirectory(currentDir);
 		}
-		//generateJPG();
 		
-		File frameCache = new File(mRoot + "/hevplayer");
+		File frameCache = new File(mRoot + "/.hevplayer");
 		if( !frameCache.exists() )
 		{
 			frameCache.mkdir();
 		}
-		//getframe("/sdcard/test.jpg");
 	}
    
 	
@@ -73,7 +71,7 @@ public class LocalExploreActivity extends ListActivity {
 				return true;
 			}
 		}
-		return true; // true if not check!!
+		return false; // true if not check!!
 	}
 	
 	private void sortFiles(File[] files) {

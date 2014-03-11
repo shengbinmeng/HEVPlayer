@@ -8,7 +8,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -63,11 +62,8 @@ public class LocalExplorerAdapter extends BaseAdapter {
 			holder.icon.setImageDrawable(d);
 			Bitmap bitmap = null;
 			bitmap = createVideoThumbnail(file.getPath());
-			if(bitmap != null)
+			if (bitmap != null) {
 				holder.icon.setImageBitmap(bitmap);
-			else
-			{
-				Log.v("test0", "null");
 			}
 		}
 	}
@@ -112,7 +108,6 @@ public class LocalExplorerAdapter extends BaseAdapter {
         try {
             //retriever.set
             retriever.setDataSource(filePath);
-            Log.v("test1", filePath);
             bitmap = retriever.getFrameAtTime();
         } catch(IllegalArgumentException ex) {
             // Assume this is a corrupt video file
