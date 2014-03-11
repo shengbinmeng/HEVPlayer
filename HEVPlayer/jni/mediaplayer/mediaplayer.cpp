@@ -31,8 +31,6 @@ static int frames = 0;
 static double tlast = 0;
 
 static AVPacket flush_pkt;
-//wjx modified
-static bool isStopped = 0;
 
 uint32_t getms() {
 	struct timeval t;
@@ -94,7 +92,6 @@ MediaPlayer::MediaPlayer() {
 	tstart = 0;
 	frames = 0;
 	tlast = 0;
-	isStopped = 0;
 	av_init_packet(&flush_pkt);
 	flush_pkt.data = (uint8_t*) "FLUSH";
 
@@ -566,10 +563,7 @@ void* MediaPlayer::startDecoding(void* ptr) {
 void* MediaPlayer::startRendering(void* ptr) {
 	sPlayer->renderVideo(ptr);
 	// tell the play activity to finish
-	if(!isStopped)
-		sListener->postEvent(909, 0, 0);
-	else
-		sListener->postEvent(910, 0, 0);
+	sListener->postEvent(909, 0, 0);
 	detachJVM();
 	return NULL;
 }
@@ -630,7 +624,6 @@ int MediaPlayer::stop() {
 	}
 	LOGI("stopping \n");
 
-	isStopped = 1;
 	if (mCurrentState == MEDIA_PLAYER_PAUSED) {
 		// notify the waiting threads
 		pthread_mutex_lock(&mLock);

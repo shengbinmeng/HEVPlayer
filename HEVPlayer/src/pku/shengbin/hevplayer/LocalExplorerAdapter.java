@@ -1,7 +1,6 @@
 package pku.shengbin.hevplayer;
 
 import java.io.File;
-import java.io.FileInputStream;
 
 import pku.shengbin.hevplayer.LocalExploreActivity;
 import pku.shengbin.hevplayer.R;
