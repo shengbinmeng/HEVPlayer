@@ -4,14 +4,10 @@ import java.io.File;
 
 import pku.shengbin.hevplayer.LocalExploreActivity;
 import pku.shengbin.hevplayer.R;
-import pku.shengbin.utils.md5;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
-import android.os.AsyncTask;
-import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,15 +22,7 @@ public class LocalExplorerAdapter extends BaseAdapter {
 	private LayoutInflater 					mInflater;
 	private Context 						mContext;
 	private boolean							mHasParrent;
-	private String 	rootpath = Environment.getExternalStorageDirectory().getPath();
 
-	public native int getframe(String path, String savename, String dir);
-	static {
-		System.loadLibrary("lenthevcdec");
-		System.loadLibrary("ffmpeg");
-		System.loadLibrary("getframe");
-	}
-	
 	public LocalExplorerAdapter(Context context, File[] files, boolean isRoot) {
 		mFiles = files;
         mInflater = LayoutInflater.from(context);
@@ -68,23 +56,19 @@ public class LocalExplorerAdapter extends BaseAdapter {
 			Drawable d = null;
 			if(LocalExploreActivity.checkExtension(file)) {
 				d = mContext.getResources().getDrawable(R.drawable.ic_menu_gallery);
-				holder.icon.setImageDrawable(d);
-				//String rootpath = Environment.getExternalStorageDirectory().getPath();
-				LoadImageTask imagetask = new LoadImageTask(file.getPath(),"."+md5.MD5(file.getPath()),rootpath+"/hevplayer",holder.icon);
-				imagetask.execute();
 			}
 			else {
 				d = mContext.getResources().getDrawable(R.drawable.ic_menu_block);
-				holder.icon.setImageDrawable(d);
 			}
-			/*
 			holder.icon.setImageDrawable(d);
 			Bitmap bitmap = null;
 			bitmap = createVideoThumbnail(file.getPath());
-			if(bitmap != null) {
+			if(bitmap != null)
 				holder.icon.setImageBitmap(bitmap);
+			else
+			{
+				Log.v("test0", "null");
 			}
-			*/
 		}
 	}
 
@@ -143,53 +127,4 @@ public class LocalExplorerAdapter extends BaseAdapter {
         }
         return bitmap;
     }
-    
-    class LoadImageTask extends AsyncTask<String, Integer, String> {
-    	String file_path;
-    	String save_name;
-    	String save_dir;
-    	ImageView img;
-    	File saved_file;
-    	
-    	public LoadImageTask(String file_path, String save_name, String save_dir, ImageView image)
-    	{
-    		this.file_path = file_path;
-    		this.save_dir = save_dir;
-    		this.save_name = save_name;
-    		this.img = image;
-    		saved_file = new File(save_dir+"/"+save_name+".jpg");
-    	}
-    	
-    	@Override  
-        protected void onPreExecute() {  
-    		
-    	}
-
-		@Override
-		protected String doInBackground(String... arg0) {
-			// TODO Auto-generated method stub
-			if(saved_file.exists())
-			{
-				return null;
-			}
-			getframe(file_path,save_name,save_dir);
-			return null;
-		}
-		@Override  
-        protected void onPostExecute(String result) {
-			if(saved_file.exists())
-			{
-				BitmapFactory.Options opts = new BitmapFactory.Options();  
-				opts.inSampleSize = 5;  
-				Bitmap bitmap  =  BitmapFactory.decodeFile(saved_file.getPath());
-				img.setImageBitmap(bitmap);
-			}
-		}
-		@Override  
-        protected void onCancelled() {  
-    		
-    	}
-    }
-    
 }
-
