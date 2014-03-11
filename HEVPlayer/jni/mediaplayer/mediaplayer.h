@@ -26,6 +26,7 @@ public:
 	~MediaPlayer();
 	int setListener(MediaPlayerListener *listener);
 	int setThreadNumber(int num);
+	int setLoopPlay(int loop);
 	int open(char* file);
 	int start();
 	int pause();
@@ -40,11 +41,18 @@ public:
 	int getDuration(int *msec);
 	int getAudioParams(int *params);
 
-	pthread_mutex_t mLock;
-	pthread_cond_t mCondition;
-
 private:
 	int mThreadNumber;
+	int mLoopPlay;
+	int mNeedSeek;
+	int mFrameCount;
+	double mTimeStart;
+	int mFrames;
+	double mTimeLast;
+	AVPacket mFlushPacket;
+
+	pthread_mutex_t mLock;
+	pthread_cond_t mCondition;
 
 	media_player_state mCurrentState;
 

@@ -7,11 +7,14 @@
 
 static MediaPlayer *gMP;
 
-static int MediaPlayer_open(JNIEnv *env, jobject thiz, jstring path, jint threadNum, jfloat fps) {
+static int MediaPlayer_open(JNIEnv *env, jobject thiz, jstring path, jint threadNum, jfloat loop) {
 	const char *pathStr = env->GetStringUTFChars(path, NULL);
 	int ret = gMP->open((char *)pathStr);
 	env->ReleaseStringUTFChars(path, pathStr);
 	gMP->setThreadNumber(threadNum);
+	if (loop > 0) {
+		gMP->setLoopPlay(1);
+	}
 	return ret;
 }
 
