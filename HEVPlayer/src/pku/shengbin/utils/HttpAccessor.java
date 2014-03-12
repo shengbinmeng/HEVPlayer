@@ -6,6 +6,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * Utility class which retrieves the content of a HTTP URL as a string.
+ */
 public class HttpAccessor {
 	public String getContentFromUrl(String strUrl) {
 		StringBuffer buffer = new StringBuffer();

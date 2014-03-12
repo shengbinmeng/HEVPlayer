@@ -13,7 +13,11 @@ import android.view.Surface;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MediaPlayer { 
+/**
+ * The Java MediaPlay class. It pairs with the C++ MediaPlay class in native layer.
+ * Most of the real work is done in the C++ class. This Java class is mainly a wrapper.
+ */
+public class MediaPlayer {
     public static final int MEDIA_INFO_FRAMERATE_VIDEO = 900;
     public static final int MEDIA_INFO_END_OF_FILE = 909;
     public static final int MEDIA_INFO_WILL_PLAY_AGAIN = 908;

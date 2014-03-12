@@ -18,6 +18,12 @@ import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 import android.widget.TextView;
 
+/**
+ * This class will new a MediaPlayer instance to play the media file.
+ * It contains a GLPlayView which use a GLRenderer to render video frames.
+ * Media player control is implemented by this class. Users interact with this class
+ * when the media is playing.
+ */
 public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 		MediaPlayerControl {
 	private MediaPlayer mPlayer;
@@ -164,6 +170,9 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 	}
 
 	@Override
+	/**
+	 * Handles user touch, mainly pinch to zoom.
+	 */
 	public boolean onTouchEvent(android.view.MotionEvent event) {
 
 		if (event.getPointerCount() == 2) {

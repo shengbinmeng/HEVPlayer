@@ -15,6 +15,9 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+/**
+ * Adapter for the LocalExploreActivity's file list.
+ */
 public class LocalExplorerAdapter extends BaseAdapter {
 	
 	private File[] 							mFiles;

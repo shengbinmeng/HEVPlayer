@@ -4,6 +4,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 
+/**
+ * Utility class which show a message box to the user.
+ */
 public class MessageBox {
 
 	public static void show(Context context, String title, String msg,

@@ -6,6 +6,9 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * Utility class which downloads a file from a HTTP URL, using multiple threads.
+ */
 public class HttpDownloader {
 	private String path;
 	private String targetFile;

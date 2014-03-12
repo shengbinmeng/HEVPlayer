@@ -8,6 +8,9 @@ import android.preference.PreferenceActivity;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 
+/**
+ * Used for application settings. Some of its methods are deprecated, and needs update.
+ */
 public class SettingsActivity extends PreferenceActivity implements OnPreferenceChangeListener,
 		OnPreferenceClickListener {
 		@Override

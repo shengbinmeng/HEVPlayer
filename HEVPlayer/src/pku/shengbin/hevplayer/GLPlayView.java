@@ -10,6 +10,9 @@ import android.graphics.PixelFormat;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 
+/**
+ * GLPlayerView customs the GLSurfaceView. It can have customized OpenGL parameters.
+ */
 public class GLPlayView extends GLSurfaceView {
     private static String TAG = "GLPlayView";
     private static final boolean DEBUG = false;

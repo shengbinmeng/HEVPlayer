@@ -2,7 +2,7 @@
 #include <android/log.h>
 #include "jni_utils.h"
 
-#define LOG_TAG    "jni_utils"
+#define LOG_TAG "jni_utils"
 
 static JavaVM *gVM;
 

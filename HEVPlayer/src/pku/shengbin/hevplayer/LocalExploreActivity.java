@@ -33,6 +33,10 @@ import android.widget.AutoCompleteTextView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+/**
+ * In this activity, the user explores the local file system.
+ * When the user clicks a file, it starts a GLPlayerActivity to play the file.
+ */
 public class LocalExploreActivity extends ListActivity {
 	
 	private String 			mRoot = Environment.getExternalStorageDirectory().getPath();

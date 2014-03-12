@@ -4,6 +4,9 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import android.opengl.GLSurfaceView;
 
+/**
+ * A implementation of the Renderer interface. It redirects the required work to native layer.
+ */
 public class GLRenderer implements GLSurfaceView.Renderer {
 
     private native int nativeInit();

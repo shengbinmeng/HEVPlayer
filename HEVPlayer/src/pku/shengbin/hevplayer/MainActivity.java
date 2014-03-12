@@ -4,6 +4,12 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.view.Menu;
 
+/**
+ * The main activity of the application.
+ * It's not used in this project, because the user will be presented 
+ * with the local file list when they enter this application.
+ * It exists for possible extension in the future.
+ */
 public class MainActivity extends Activity {
 
     @Override
