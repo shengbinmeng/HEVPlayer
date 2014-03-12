@@ -1,3 +1,22 @@
+// gl_renderer.cpp: initializes an OpenGL context and uses it to render video frames or other data.
+// It also provides JNI functions to be used in Java code.
+//
+// Copyright (c) 2013 Strongene Ltd. All Right Reserved.
+// http://www.strongene.com
+//
+// Contributors:
+// Shengbin Meng <shengbinmeng@gmail.com>
+//
+// You are free to re-use this as the basis for your own application
+// in source and binary forms, with or without modification, provided
+// that the following conditions are met:
+//
+//  * Redistributions of source code must retain the above copyright
+// notice and this list of conditions.
+//  * Redistributions in binary form must reproduce the above
+// copyright notice and this list of conditions in the documentation
+// and/or other materials provided with the distribution.
+
 #include <jni.h>
 #include <android/log.h>
 
