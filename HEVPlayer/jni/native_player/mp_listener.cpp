@@ -90,6 +90,11 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) 
 
 int MediaPlayerListener::drawFrame(VideoFrame *vf) {
 	pthread_mutex_lock(&gVFMutex);
+	if (gVF != NULL) {
+		free(gVF->yuv_data[0]);
+		free(gVF);
+		gVF = NULL;
+	}
 	gVF = vf;
 	pthread_mutex_unlock(&gVFMutex);
 
