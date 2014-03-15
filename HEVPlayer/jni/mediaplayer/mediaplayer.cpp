@@ -35,7 +35,7 @@ extern "C" {
 
 #define MAX_AP_QUEUE_SIZE (2 * 128)
 #define MAX_VP_QUEUE_SIZE (2 * 128)
-#define MAX_FRAME_QUEUE_SIZE 100
+#define MAX_FRAME_QUEUE_SIZE 60
 #define TIMEOUT_MS 5000
 
 static MediaPlayer* sPlayer;
