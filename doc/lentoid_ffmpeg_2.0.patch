@@ -1,0 +1,2714 @@
+diff --git a/.gdbinit b/.gdbinit
+new file mode 100644
+index 0000000..d080317
+--- /dev/null
++++ b/.gdbinit
+@@ -0,0 +1,69 @@
++#set args -loglevel debug -f rawvideo -s 352x288 -r 25 -pix_fmt yuv420p -i /home/public/video/yuv/Foreman_352x288_25fps_yv12.yuv -vcodec liblenthevchm10 -b:v 200k -keyint_min 200 -threads 1 -preset ultrafast -wpp 0 -vframes 50 -y /tmp/Foreman.flv
++#set args -loglevel debug -i /home/public/video/transform3.flv -vcodec liblenthevchm10 -b:v 400k -keyint_min 200 -threads 13 -preset ultrafast -wpp 1 -recon /tmp/trans_recon.yuv -vframes 50 -acodec copy -y /tmp/trans.flv
++#set args -loglevel verbose -i /tmp/lent.flv -f rawvideo -pix_fmt yuv420p -vsync passthrough -y /tmp/lent_dec.yuv
++
++#b lent_hevc_enc_init
++#b lent_hevc_enc_encode
++#b lent_hevc_enc_close
++
++
++#set args -f rawvideo -s 1024x768 -pix_fmt yuv420p -i /tmp/game_1024x576.yuv -vcodec liblenthevchm10 -b:v 800k -keyint_min 200 -threads 13 -preset ultrafast -wpp 1 -y /tmp/game_tmp.flv
++
++#b flv_write_trailer
++#b flv_write_packet
++
++
++#set args -i ~/test/sconcat/trans/transform3_concat.conf -vcodec copy -acodec copy -y /tmp/sconcat.flv
++#b sconcat_probe
++#b sconcat_read_header
++#b sconcat_read_packet
++#b sconcat_read_close
++
++
++#set args -ss 30 -i /home/public/video/haijiao7hao.flv -t 10 -vstats_file /tmp/temp.log -vcodec libx264 -b:v 400k -an -y /tmp/temp.flv
++
++#set args -v verbose -i ~/test/sconcat/trans/haijiao7hao_concat.conf -vcodec copy -y /tmp/sconcat.flv
++
++#set args -ss 5380 -i /home/public/video/Hillsong.avi -t 20 -an -b:v 400k -vstats_file /home/hugeice/test/sconcat/trans/Hillsong_269.flv.log -vcodec liblenthevchm10 -keyint_min 200 -threads 16 -preset ultrafast -wpp 1 -y /home/hugeice/test/sconcat/trans/Hillsong_269.flv
++
++#set args -i /home/public/video/hillsong_info.flv -vn -acodec libfaac -b:a 128k -y /tmp/temp.flv
++
++#set args -v debug -i /home/public/video/MVDL1ZERO_A_docomo_3.ts -f rawvideo -pix_fmt yuv420p -vsync passthrough -y /tmp/ts_dec.yuv
++
++#b lent_hevc_dec_init
++#b lent_hevc_dec_close
++#b lent_hevc_dec_decode
++
++
++#set args -v debug -i /home/public/video/MVDL1ZERO_A_docomo_3.flv -acodec copy -vcodec copy -bsf h264_mp4toannexb -y /tmp/temp.ts
++#b mpegts_write_packet_internal
++
++#set args -v debug -threads 1 -i /tmp/transform3.ts -f rawvideo -pix_fmt yuv420p -y /dev/null
++#b lent_hevc_dec_init
++#b lent_hevc_dec_close
++#b lent_hevc_dec_decode
++#b lenthevcdec_decode_frame
++
++
++#set args -v debug -i 264.ts -vcodec copy -an -y 264.flv
++#b mpegts_read_packet
++#b ffmpeg.c:1459
++
++#set args -v debug -i trans.ts -vcodec copy -an -y trans.flv
++#b hevc_parse
++#b hevc_split
++
++#set args -v debug -ss 60 -threads 1 -i /home/public/video/transform3_h264.ts -an -f rawvideo -pix_fmt yuv420p -y /dev/null
++#b libavcodec/h264.c:decode_frame
++
++#set args -v debug -threads 1 -i /home/public/video/DELTAQP_B_SONY_3.flv -an -f rawvideo -y /dev/null
++#b lent_hevc_dec_init
++#b lent_hevc_dec_close
++#b lent_hevc_dec_decode
++#b lent_hevc_dec_flush
++
++
++set args -v debug -i /home/public/video/The.World.of.Pandora.mov -acodec copy -vf scale=1280:720 -vcodec liblenthevc -b:v 1200k -threads 5 -wpp 4 -keyint_min 200 -preset fast -y /tmp/afd_hm12_720p_1200kbps.flv
++b lent_hevc_enc_init
++b lent_hevc_enc_close
++b lent_hevc_enc_encode
+diff --git a/buildrpm.sh b/buildrpm.sh
+new file mode 100755
+index 0000000..08c6cb0
+--- /dev/null
++++ b/buildrpm.sh
+@@ -0,0 +1,55 @@
++#!/bin/sh
++
++spec="lentff.spec"
++if [ "$#" -gt "1" ]; then
++    echo "Usage: buildrpm.sh [spec_file_name]"
++    exit 1
++fi
++
++if [ $# -eq 1 ]; then
++    spec=$1
++fi
++
++if [ ! -e $spec ]; then
++    echo "error: Spec file '${spec}' not found!" >&2
++    exit 1;
++fi
++
++
++
++# BuildRoot: ~/rpmbuild/BUILDROOT/ffmpeg-2.0-4.x86_64/
++buildroot="${HOME}/rpmbuild/BUILDROOT"
++
++name=`sed -rn '/^\s*Name\s*:\s*(\w+)\s*$/{s//\1/p;q}' lentff.spec`
++echo "name is: $name"
++
++ver=`sed -rn '/^\s*Version\s*:\s*([0-9\.]+)\s*/{s//\1/p;q}' lentff.spec`
++echo "version is: $ver"
++
++rver=`sed -rn '/^\s*Release\s*:\s*([0-9]+)\s*$/{s//\1/p;q}' lentff.spec`
++echo "release version is: $rver"
++
++arch=`uname -m`
++echo "arch is: $arch"
++
++srcdir="${buildroot}/${name}-${ver}-${rver}.${arch}"
++echo "source file dir is: $srcdir"
++
++echo "create dir ..."
++mkdir -p "${srcdir}/usr/local/bin"
++mkdir -p "${srcdir}/usr/local/lib64"
++mkdir -p "${srcdir}/usr/local/include"
++mkdir -p "${srcdir}/etc/ld.so.conf.d"
++echo "copy file ..."
++cp ./ffmpeg "${srcdir}/usr/local/bin/"
++cp /usr/local/lib64/liblenthevcdec.so.0.0.0 "${srcdir}/usr/local/lib64/"
++ln -s liblenthevcdec.so.0.0.0 "${srcdir}/usr/local/lib64/liblenthevcdec.so.0"
++ln -s liblenthevcdec.so.0.0.0 "${srcdir}/usr/local/lib64/liblenthevcdec.so"
++cp /usr/local/lib64/liblenthevcenc.so "${srcdir}/usr/local/lib64/"
++cp /usr/local/include/lenthevcdec.h "${srcdir}/usr/local/include/"
++cp /usr/local/include/Lentoid.h "${srcdir}/usr/local/include/"
++cp /etc/ld.so.conf.d/lentoid.conf "${srcdir}/etc/ld.so.conf.d/"
++
++echo "build rpm ..."
++rpmbuild -bb $spec
++
+diff --git a/configure b/configure
+index c9ad948..b461d57 100755
+--- a/configure
++++ b/configure
+@@ -237,6 +237,8 @@ External library support:
+   --enable-libvpx          enable VP8 and VP9 de/encoding via libvpx [no]
+   --enable-libwavpack      enable wavpack encoding via libwavpack [no]
+   --enable-libx264         enable H.264 encoding via x264 [no]
++  --enable-liblenthevcdec  enable HEVC decoding via Lentoid HEVC Decoder(Strongene Inc.)[no]
++  --enable-liblenthevcenc  enable HEVC encoding via Lentoid HEVC Encoder(Strongene Inc.)[no]
+   --enable-libxavs         enable AVS encoding via xavs [no]
+   --enable-libxvid         enable Xvid encoding via xvidcore,
+                            native MPEG-4/Xvid encoder exists [no]
+@@ -1201,6 +1203,8 @@ EXTERNAL_LIBRARY_LIST="
+     libvpx
+     libwavpack
+     libx264
++    liblenthevcdec
++    liblenthevcenc
+     libxavs
+     libxvid
+     libzmq
+@@ -2026,6 +2030,12 @@ libvpx_vp9_encoder_deps="libvpx"
+ libwavpack_encoder_deps="libwavpack"
+ libx264_encoder_deps="libx264"
+ libx264rgb_encoder_deps="libx264"
++liblenthevc_decoder_deps="liblenthevcdec hevc_parser"
++liblenthevchm10_decoder_deps="liblenthevcdec hevc_parser"
++liblenthevchm91_decoder_deps="liblenthevcdec hevc_parser"
++liblenthevc_encoder_deps="liblenthevcenc"
++liblenthevchm10_encoder_deps="liblenthevcenc"
++liblenthevchm91_encoder_deps="liblenthevcenc"
+ libxavs_encoder_deps="libxavs"
+ libxvid_encoder_deps="libxvid"
+ libutvideo_decoder_deps="libutvideo"
+@@ -3727,6 +3737,8 @@ die_license_disabled gpl x11grab
+ 
+ die_license_disabled nonfree libaacplus
+ die_license_disabled nonfree libfaac
++die_license_disabled nonfree liblenthevcdec
++die_license_disabled nonfree liblenthevcenc
+ enabled gpl && die_license_disabled_gpl nonfree libfdk_aac
+ enabled gpl && die_license_disabled_gpl nonfree openssl
+ 
+@@ -4191,6 +4203,8 @@ enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFil
+ enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
+                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
+                                die "ERROR: libx264 must be installed and version must be >= 0.118."; }
++enabled liblenthevcdec    && require liblenthevcdec lenthevcdec.h lenthevcdec_decode_frame -llenthevcdec
++enabled liblenthevcenc    && require liblenthevcenc lenthevcenc.h lenthevcenc_encode_frame -llenthevcenc
+ enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
+ enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+ enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
+diff --git a/ffmpeg.c b/ffmpeg.c
+index 01cfaea..6e914d8 100644
+--- a/ffmpeg.c
++++ b/ffmpeg.c
+@@ -676,6 +676,25 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
+     AVCodecContext *enc = ost->st->codec;
+     AVPacket pkt;
+     int got_packet = 0;
++    InputStream *ist = NULL;
++
++    if (ost->source_index >= 0) {
++        ist = input_streams[ost->source_index];
++	/* out the timestamp (offset) in the original input file of the first output frame to video state file */
++	if ( ist && AV_NOPTS_VALUE == ost->original_ts_offset ) {
++		InputFile *ifile = input_files[ist->file_index];
++		int64_t ts_offset, pts;
++		ts_offset = -ifile->ts_offset;
++		if ( 0 && AV_NOPTS_VALUE != ifile->ctx->start_time ) // use relative timestamp
++			ts_offset -= ifile->ctx->start_time;
++		pts = av_rescale_q(frame->pkt_pts / ist->ts_scale,
++				   ost->st->time_base, AV_TIME_BASE_Q)
++			+ ts_offset;
++		ost->original_ts_offset = pts;
++		av_log(NULL, AV_LOG_INFO, "%s:%d: original_ts_offset=%f\n",
++		       s->filename, ost->index, ost->original_ts_offset / (double)AV_TIME_BASE);
++	}
++    }
+ 
+     av_init_packet(&pkt);
+     pkt.data = NULL;
+@@ -861,6 +880,31 @@ static void do_video_out(AVFormatContext *s,
+     pkt.data = NULL;
+     pkt.size = 0;
+ 
++    /* record the timestamp (offset) in the original input file of the first output frame to video state file */
++    if ( ist && AV_NOPTS_VALUE == ost->original_ts_offset ) {
++	    InputFile *ifile = input_files[ist->file_index];
++	    int64_t ts_offset, pts;
++	    ts_offset = -ifile->ts_offset;
++	    if ( 0 && AV_NOPTS_VALUE != ifile->ctx->start_time ) // use relative timestamp
++		    ts_offset -= ifile->ctx->start_time;
++	    pts = av_rescale_q(in_picture->pkt_pts / ist->ts_scale,
++			       ost->st->time_base, AV_TIME_BASE_Q)
++		    + ts_offset;
++	    ost->original_ts_offset = pts;
++	    av_log(NULL, AV_LOG_INFO, "%s:%d: original_ts_offset=%f\n",
++		   s->filename, ost->index, ost->original_ts_offset / (double)AV_TIME_BASE);
++	    if ( vstats_filename ) {
++		    if (!vstats_file) {
++			    vstats_file = fopen(vstats_filename, "w");
++			    if (!vstats_file) {
++				    perror("fopen");
++				    exit_program(1);
++			    }
++		    }
++		    fprintf(vstats_file, "original_ts_offset=%f\n", ost->original_ts_offset / (double)AV_TIME_BASE);
++	    }
++    }
++
+     in_picture->pts = ost->sync_opts;
+ 
+ #if 1
+@@ -1391,6 +1435,21 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
+     AVPicture pict;
+     AVPacket opkt;
+ 
++    /* out the timestamp (offset) in the original input file of the first output frame to video state file */
++    if ( AV_NOPTS_VALUE == ost->original_ts_offset ) {
++	    InputFile *ifile = input_files[ist->file_index];
++	    int64_t ts_offset, pts;
++	    ts_offset = -ifile->ts_offset;
++	    if ( 0 && AV_NOPTS_VALUE != ifile->ctx->start_time ) // use relative timestamp
++		    ts_offset -= ifile->ctx->start_time;
++	    pts = av_rescale_q(pkt->pts / ist->ts_scale,
++			       ist->st->time_base, AV_TIME_BASE_Q)
++		    + ts_offset;
++	    ost->original_ts_offset = pts;
++	    av_log(NULL, AV_LOG_INFO, "%s:%d: original_ts_offset=%f\n",
++		   ifile->ctx->filename, ost->index, ost->original_ts_offset / (double)AV_TIME_BASE);
++    }
++
+     av_init_packet(&opkt);
+ 
+     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
+diff --git a/ffmpeg.h b/ffmpeg.h
+index 24e6d47..c9bd644 100644
+--- a/ffmpeg.h
++++ b/ffmpeg.h
+@@ -322,6 +322,7 @@ typedef struct OutputStream {
+     /* pts of the first frame encoded for this stream, used for limiting
+      * recording time */
+     int64_t first_pts;
++    int64_t original_ts_offset;
+     /* dts of the last packet sent to the muxer */
+     int64_t last_mux_dts;
+     AVBitStreamFilterContext *bitstream_filters;
+diff --git a/ffmpeg_opt.c b/ffmpeg_opt.c
+index 286f973..4f51835 100644
+--- a/ffmpeg_opt.c
++++ b/ffmpeg_opt.c
+@@ -1090,6 +1090,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
+         input_streams[source_index]->discard = 0;
+         input_streams[source_index]->st->discard = AVDISCARD_NONE;
+     }
++    ost->original_ts_offset = AV_NOPTS_VALUE;
+     ost->last_mux_dts = AV_NOPTS_VALUE;
+ 
+     return ost;
+diff --git a/lent_test.sh b/lent_test.sh
+new file mode 100755
+index 0000000..4ac1bca
+--- /dev/null
++++ b/lent_test.sh
+@@ -0,0 +1,27 @@
++#!/bin/sh
++#
++# Strongene Lentoid HEVC Encoder/Decoder self test script
++#
++# Copyright (c) 2013 Strongene Inc.
++#
++
++if [ $# != 1 ]
++then
++    echo "Usage: lent_test.sh <input_file_name>"
++    exit 1
++fi
++
++echo "input file is '$1'"
++
++rm -f /tmp/lent_recon.yuv
++
++#./ffmpeg -i $1 -vcodec liblenthevchm10 -b:v 400k -keyint_min 200 -threads 13 -preset ultrafast -wpp 1 -recon /tmp/lent_recon.yuv -vframes 100 -acodec copy -y /tmp/lent.flv
++./ffmpeg -i $1 -vcodec liblenthevchm10 -b:v 1200k -keyint_min 200 -threads 13 -preset ultrafast -wpp 1 -recon /tmp/lent_recon.yuv -vframes 200 -acodec aac -strict -2 -y /tmp/lent.flv
++
++
++./ffmpeg -i /tmp/lent.flv -f rawvideo -pix_fmt yuv420p -vsync passthrough -y /tmp/lent_dec.yuv
++
++cmp /tmp/lent_recon.yuv /tmp/lent_dec.yuv
++[ $? -eq 0 ] && echo "OK."
++
++rm -f /tmp/lent_flv /tmp/lent_recon.yuv /tmp/lent_dec.yuv
+diff --git a/lentff.spec b/lentff.spec
+new file mode 100644
+index 0000000..ac8f847
+--- /dev/null
++++ b/lentff.spec
+@@ -0,0 +1,30 @@
++Summary: FFmpeg with Lentoid HEVC Codecs
++Name: ffmpeg
++Version: 2.0
++Release: 12
++Vendor: Strongene Inc.
++Group: Applications/Multimedia
++License: Commercial
++#BuildRoot: /tmp/%{name}-%{version}-root
++#Prefix: /usr
++
++%description
++FFmpeg with Lentoid HEVC Codecs.
++
++%post
++ldconfig
++
++%files
++%defattr(-,root,root)
++/usr/local/bin/ffmpeg
++/usr/local/lib64/liblenthevcdec.so
++/usr/local/lib64/liblenthevcdec.so.0
++/usr/local/lib64/liblenthevcdec.so.0.0.0
++/usr/local/lib64/liblenthevcenc.so
++/usr/local/include/lenthevcdec.h
++/usr/local/include/Lentoid.h
++/etc/ld.so.conf.d/lentoid.conf
++
++%changelog
++* Fri Aug 9 2013 James.DF <hugeice@gmail.com>
++- install ffmpeg with lentoid hevc codecs and lentoid hevc codec headers
+diff --git a/libavcodec/Makefile b/libavcodec/Makefile
+index c6cd41b..2f21291 100644
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -719,6 +719,12 @@ OBJS-$(CONFIG_LIBWAVPACK_ENCODER)         += libwavpackenc.o
+ OBJS-$(CONFIG_LIBX264_ENCODER)            += libx264.o
+ OBJS-$(CONFIG_LIBXAVS_ENCODER)            += libxavs.o
+ OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
++OBJS-$(CONFIG_LIBLENTHEVC_DECODER)        += liblenthevcdec.o
++OBJS-$(CONFIG_LIBLENTHEVCHM10_DECODER)    += liblenthevcdec.o
++OBJS-$(CONFIG_LIBLENTHEVCHM91_DECODER)    += liblenthevcdec.o
++OBJS-$(CONFIG_LIBLENTHEVC_ENCODER)        += liblenthevcenc.o
++OBJS-$(CONFIG_LIBLENTHEVCHM10_ENCODER)    += liblenthevcenc.o
++OBJS-$(CONFIG_LIBLENTHEVCHM91_ENCODER)    += liblenthevcenc.o
+ 
+ # parsers
+ OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
+@@ -766,6 +772,7 @@ OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o \
+ OBJS-$(CONFIG_VORBIS_PARSER)           += vorbis_parser.o xiph.o
+ OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
+ OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
++OBJS-$(CONFIG_HEVC_PARSER)             += hevc_parser.o
+ 
+ # bitstream filters
+ OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aacadtsdec.o \
+diff --git a/libavcodec/allcodecs.c b/libavcodec/allcodecs.c
+index 5cdf778..c67d527 100644
+--- a/libavcodec/allcodecs.c
++++ b/libavcodec/allcodecs.c
+@@ -505,6 +505,12 @@ void avcodec_register_all(void)
+     REGISTER_ENCODER(LIBXAVS,           libxavs);
+     REGISTER_ENCODER(LIBXVID,           libxvid);
+     REGISTER_ENCODER(LIBAACPLUS,        libaacplus);
++    REGISTER_DECODER(LIBLENTHEVCHM91,   liblenthevchm91);
++    REGISTER_DECODER(LIBLENTHEVCHM10,   liblenthevchm10);
++    REGISTER_DECODER(LIBLENTHEVC,       liblenthevc);
++    REGISTER_ENCODER(LIBLENTHEVCHM91,   liblenthevchm91);
++    REGISTER_ENCODER(LIBLENTHEVCHM10,   liblenthevchm10);
++    REGISTER_ENCODER(LIBLENTHEVC,       liblenthevc);
+ 
+     /* text */
+     REGISTER_DECODER(BINTEXT,           bintext);
+@@ -544,6 +550,7 @@ void avcodec_register_all(void)
+     REGISTER_PARSER(VORBIS,             vorbis);
+     REGISTER_PARSER(VP3,                vp3);
+     REGISTER_PARSER(VP8,                vp8);
++    REGISTER_PARSER(HEVC,               hevc);
+ 
+     /* bitstream filters */
+     REGISTER_BSF(AAC_ADTSTOASC,         aac_adtstoasc);
+diff --git a/libavcodec/avcodec.h b/libavcodec/avcodec.h
+index 98217b8..19b762b 100644
+--- a/libavcodec/avcodec.h
++++ b/libavcodec/avcodec.h
+@@ -274,6 +274,10 @@ enum AVCodecID {
+     AV_CODEC_ID_ESCAPE130_DEPRECATED,
+     AV_CODEC_ID_G2M_DEPRECATED,
+ 
++    AV_CODEC_ID_HEVC_HM91 = AV_CODEC_ID_G2M_DEPRECATED + 1000,
++    AV_CODEC_ID_HEVC_HM10,
++    AV_CODEC_ID_HEVC,
++
+     AV_CODEC_ID_BRENDER_PIX= MKBETAG('B','P','I','X'),
+     AV_CODEC_ID_Y41P       = MKBETAG('Y','4','1','P'),
+     AV_CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
+diff --git a/libavcodec/codec_desc.c b/libavcodec/codec_desc.c
+index adc4772..f1ae1f7 100644
+--- a/libavcodec/codec_desc.c
++++ b/libavcodec/codec_desc.c
+@@ -1387,6 +1387,25 @@ static const AVCodecDescriptor codec_descriptors[] = {
+         .props     = AV_CODEC_PROP_LOSSY,
+     },
+ 
++    {
++        .id        = AV_CODEC_ID_HEVC_HM91,
++        .type      = AVMEDIA_TYPE_VIDEO,
++        .name      = "liblenthevc(hm9.1)",
++        .long_name = NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM9.1 compatible)"),
++    },
++    {
++        .id        = AV_CODEC_ID_HEVC_HM10,
++        .type      = AVMEDIA_TYPE_VIDEO,
++        .name      = "liblenthevc(hm10.0)",
++        .long_name = NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM10.0 compatible)"),
++    },
++    {
++        .id        = AV_CODEC_ID_HEVC,
++        .type      = AVMEDIA_TYPE_VIDEO,
++        .name      = "liblenthevc",
++        .long_name = NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC"),
++    },
++
+     /* various PCM "codecs" */
+     {
+         .id        = AV_CODEC_ID_PCM_S16LE,
+diff --git a/libavcodec/hevc_parser.c b/libavcodec/hevc_parser.c
+new file mode 100644
+index 0000000..14d3e75
+--- /dev/null
++++ b/libavcodec/hevc_parser.c
+@@ -0,0 +1,201 @@
++/*
++ * HEVC parser
++ * Copyright (c) 2012-2013 Strongene Inc. <service@strongene.com>
++ * Copyright (c) 2013 James.DF <hugeice@gmail.com>
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++/**
++ * @file
++ * H.265 / HEVC / MPEG-HEVC parser.
++ * @author James.DF <hugeice@gmail.com>
++ */
++
++
++#include "libavutil/avassert.h"
++#include "parser.h"
++
++
++#define FLAG_PREFIX_FOUND 1 /* AU delimiter / prefix SEI / VPS / SPS/ PPS ... found */
++#define FLAG_FRAME_FOUND  2 /* Frame start: prefix found or first slice of picture found */
++#define FLAG_IRAP_FOUND   4 /* Intra Random Access Point NAL found, for key frame detect */
++#define FLAG_ALL_IRAP     8 /* All VCL NALU is IRAP NALU, frame is key frame */
++
++
++static int hevc_is_key_frame(const uint8_t *buf, int buf_size)
++{
++	uint32_t state = -1, nal_type;
++	int irap_found = 0, all_irap = 0, i;
++
++	for ( i = 0; i < buf_size; i++ ) {
++		state = (state << 8) | buf[i];
++		if ( (state & 0xFFFFFF00) == 0x100 ) {
++			nal_type = (state & 0x7E) >> 1;
++			if ( nal_type < 32 ) {
++				if ( nal_type < 16 || nal_type >= 24 ) {/* non-IRAP found */
++					all_irap = 0;
++					break;
++				} else if ( !irap_found ) {/* IRAP found */
++					irap_found = FLAG_IRAP_FOUND;
++					all_irap = FLAG_ALL_IRAP;
++				}
++			}
++		}
++	}
++	return irap_found && all_irap;
++}
++
++static int hevc_find_frame_end(ParseContext *pc, AVCodecContext *avctx,
++                               const uint8_t *buf, int buf_size, int *key_frame)
++{
++	int prefix_found, vop_found, irap_found, all_irap, next_found, nal_type, i;
++	uint64_t state64;
++
++	prefix_found = pc->frame_start_found & FLAG_PREFIX_FOUND;
++	vop_found = pc->frame_start_found & FLAG_FRAME_FOUND;
++	irap_found = pc->frame_start_found & FLAG_IRAP_FOUND;
++	all_irap = pc->frame_start_found & FLAG_ALL_IRAP;
++	state64   = pc->state64;
++
++	for (i = 0; i < buf_size && !vop_found; i++) {
++		state64 = (state64 << 8) | buf[i];
++		if ( (state64 & 0x0000FFFFFF000000) == 0x1000000 ) {
++			nal_type = (state64 & 0x7E0000) >> 17;
++			if ( nal_type != 40 /*Suffix SEI*/ && nal_type >= 32 ) {
++				/* seq header found */
++				av_assert0( !prefix_found );
++				vop_found = FLAG_FRAME_FOUND;
++				prefix_found = FLAG_PREFIX_FOUND;
++			} else if ( nal_type < 32 ) { /* found some VLC nal units */
++				if ( state64 & 0x80 ) { /* first slice in pic */
++					av_assert0( !prefix_found );
++					vop_found = FLAG_FRAME_FOUND;
++					if ( nal_type >= 16 && nal_type <= 23 ) { /* IRAP VCL NALU */
++						irap_found = FLAG_IRAP_FOUND;
++						all_irap = FLAG_ALL_IRAP;
++					}
++				}
++			}
++		}
++	}
++
++	if ( vop_found ) {
++		next_found = 0;
++		for (; i < buf_size && !next_found; i++) {
++			state64 = (state64 << 8) | buf[i];
++			if ( (state64 & 0x0000FFFFFF000000) == 0x1000000 ) {
++				nal_type = (state64 & 0x7E0000) >> 17;
++				if ( nal_type != 40 /*Suffix SEI*/ && nal_type >= 32 ) {
++					if ( !prefix_found ) { /* seq header found */
++						next_found = FLAG_FRAME_FOUND;
++					}
++				} else if ( nal_type < 32 ) { /* found some VLC nal units */
++					if ( nal_type < 16 || nal_type >= 24 ) {/* non-IRAP found */
++						all_irap = 0;
++					} else if ( !irap_found ) {/* IRAP found */
++						irap_found = FLAG_IRAP_FOUND;
++						all_irap = FLAG_ALL_IRAP;
++					}
++					if ( state64 & 0x80 ) { /* first slice in pic */
++						if ( !prefix_found )
++							next_found = FLAG_FRAME_FOUND;
++						else
++							prefix_found = 0;
++					}
++				}
++			}
++		}
++		if ( next_found ) {
++			pc->frame_start_found = 0;
++			pc->state64 = -1ll;
++			*key_frame = irap_found && all_irap;
++			return i - 6;
++		}
++	}
++
++	pc->frame_start_found = prefix_found | vop_found | irap_found | all_irap;
++	pc->state64           = state64;
++	return END_NOT_FOUND;
++}
++
++static int hevc_parse(AVCodecParserContext *s,
++                      AVCodecContext *avctx,
++                      const uint8_t **poutbuf, int *poutbuf_size,
++                      const uint8_t *buf, int buf_size)
++{
++	ParseContext *pc = s->priv_data;
++	int next, key_frame = -1;
++
++	if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
++		next = buf_size;
++		key_frame = hevc_is_key_frame(buf, buf_size);
++	} else {
++		key_frame = 0;
++		next = hevc_find_frame_end(pc, avctx, buf, buf_size, &key_frame);
++		if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
++			*poutbuf      = NULL;
++			*poutbuf_size = 0;
++			return buf_size;
++		}
++	}
++	s->key_frame = key_frame;
++
++	if (s->flags & PARSER_FLAG_ONCE) {
++		s->flags &= PARSER_FLAG_COMPLETE_FRAMES;
++	}
++	*poutbuf      = buf;
++	*poutbuf_size = buf_size;
++	return next;
++}
++
++static int hevc_split(AVCodecContext *avctx,
++                      const uint8_t *buf, int buf_size)
++{
++	int i;
++	uint32_t state = -1, nal_type;
++	int has_vps = 0, has_sps = 0, has_pps = 0;
++
++	for ( i = 0; i < buf_size; i++ ) {
++		state = (state << 8) | buf[i];
++		if ( (state & 0xFFFFFF00) == 0x100 ) {
++			nal_type = (state & 0x7E) >> 1;
++			if ( nal_type == 32 ) {
++				has_vps = 1;
++			} else if ( nal_type == 33 ) {
++				has_sps = 1;
++			} else if ( nal_type == 34 ) {
++				has_pps = 1;
++			} else if ( has_vps && has_sps && has_pps ) {
++				av_assert0( i > 3 );
++				i -= 3;
++				while ( i > 0 && buf[i - 1] == 0 )
++					i--;
++				return i;
++			}
++		}
++	}
++	return 0;
++}
++
++AVCodecParser ff_hevc_parser = {
++	.codec_ids      = { AV_CODEC_ID_HEVC, AV_CODEC_ID_HEVC_HM91, AV_CODEC_ID_HEVC_HM10 },
++	.priv_data_size = sizeof(ParseContext),
++	.parser_parse   = hevc_parse,
++	.parser_close   = ff_parse_close,
++	.split          = hevc_split,
++};
+diff --git a/libavcodec/liblenthevcdec.c b/libavcodec/liblenthevcdec.c
+new file mode 100644
+index 0000000..82bb019
+--- /dev/null
++++ b/libavcodec/liblenthevcdec.c
+@@ -0,0 +1,665 @@
++/*
++ * HEVC decoding using the Strongene Lentoid HEVC decoder
++ * Copyright (C) 2013 Strongene Inc.
++ * James.DF <service@strongene.com>
++ */
++
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include "../libavutil/common.h"
++#include "../libavutil/imgutils.h"
++#include "../libavutil/avassert.h"
++#include "../libavutil/timestamp.h"
++#include "avcodec.h"
++#include "lenthevcdec.h"
++
++typedef struct LentHEVCDecContext {
++	lenthevcdec_ctx	dec;
++	int		threads;
++	int             length_size;
++	uint8_t*        temp_buf;
++	int             temp_buf_size;
++	int		drop_ref;
++	uint8_t*	reframe_buf;
++	int		reframe_buf_size;
++	int		reframe_buf_idx;
++	int		reframe_buf_offset;
++} LentHEVCDecContext;
++
++static const uint8_t start_code[] = {0x00, 0x00, 0x01};
++
++enum hevc_nal_unit_type_e
++{
++	NAL_UNIT_CODED_SLICE_TRAIL_N = 0,   // 0
++	NAL_UNIT_CODED_SLICE_TRAIL_R,   // 1
++
++	NAL_UNIT_CODED_SLICE_TSA_N,     // 2
++	NAL_UNIT_CODED_SLICE_TLA,       // 3   // Current name in the spec: TSA_R
++
++	NAL_UNIT_CODED_SLICE_STSA_N,    // 4
++	NAL_UNIT_CODED_SLICE_STSA_R,    // 5
++
++	NAL_UNIT_CODED_SLICE_RADL_N,    // 6
++	NAL_UNIT_CODED_SLICE_DLP,       // 7 // Current name in the spec: RADL_R
++
++	NAL_UNIT_CODED_SLICE_RASL_N,    // 8
++	NAL_UNIT_CODED_SLICE_TFD,       // 9 // Current name in the spec: RASL_R
++
++	NAL_UNIT_RESERVED_10,
++	NAL_UNIT_RESERVED_11,
++	NAL_UNIT_RESERVED_12,
++	NAL_UNIT_RESERVED_13,
++	NAL_UNIT_RESERVED_14,
++	NAL_UNIT_RESERVED_15,
++
++	NAL_UNIT_CODED_SLICE_BLA,       // 16   // Current name in the spec: BLA_W_LP
++	NAL_UNIT_CODED_SLICE_BLANT,     // 17   // Current name in the spec: BLA_W_DLP
++	NAL_UNIT_CODED_SLICE_BLA_N_LP,  // 18
++	NAL_UNIT_CODED_SLICE_IDR,       // 19  // Current name in the spec: IDR_W_DLP
++	NAL_UNIT_CODED_SLICE_IDR_N_LP,  // 20
++	NAL_UNIT_CODED_SLICE_CRA,       // 21
++	NAL_UNIT_RESERVED_22,
++	NAL_UNIT_RESERVED_23,
++
++	NAL_UNIT_RESERVED_24,
++	NAL_UNIT_RESERVED_25,
++	NAL_UNIT_RESERVED_26,
++	NAL_UNIT_RESERVED_27,
++	NAL_UNIT_RESERVED_28,
++	NAL_UNIT_RESERVED_29,
++	NAL_UNIT_RESERVED_30,
++	NAL_UNIT_RESERVED_31,
++
++	NAL_UNIT_VPS,                   // 32
++	NAL_UNIT_SPS,                   // 33
++	NAL_UNIT_PPS,                   // 34
++	NAL_UNIT_ACCESS_UNIT_DELIMITER, // 35
++	NAL_UNIT_EOS,                   // 36
++	NAL_UNIT_EOB,                   // 37
++	NAL_UNIT_FILLER_DATA,           // 38
++	NAL_UNIT_SEI,                   // 39 Prefix SEI
++	NAL_UNIT_SEI_SUFFIX,            // 40 Suffix SEI
++
++	NAL_UNIT_RESERVED_41,
++	NAL_UNIT_RESERVED_42,
++	NAL_UNIT_RESERVED_43,
++	NAL_UNIT_RESERVED_44,
++	NAL_UNIT_RESERVED_45,
++	NAL_UNIT_RESERVED_46,
++	NAL_UNIT_RESERVED_47,
++	NAL_UNIT_UNSPECIFIED_48,
++	NAL_UNIT_UNSPECIFIED_49,
++	NAL_UNIT_UNSPECIFIED_50,
++	NAL_UNIT_UNSPECIFIED_51,
++	NAL_UNIT_UNSPECIFIED_52,
++	NAL_UNIT_UNSPECIFIED_53,
++	NAL_UNIT_UNSPECIFIED_54,
++	NAL_UNIT_UNSPECIFIED_55,
++	NAL_UNIT_UNSPECIFIED_56,
++	NAL_UNIT_UNSPECIFIED_57,
++	NAL_UNIT_UNSPECIFIED_58,
++	NAL_UNIT_UNSPECIFIED_59,
++	NAL_UNIT_UNSPECIFIED_60,
++	NAL_UNIT_UNSPECIFIED_61,
++	NAL_UNIT_UNSPECIFIED_62,
++	NAL_UNIT_UNSPECIFIED_63,
++	NAL_UNIT_INVALID,
++};
++
++/* read integer from memory with network byte order */
++/* max size is 4, means read 32bit integer */
++static uint32_t mem_read_int(void* addr, size_t size)
++{
++	uint8_t* p = (uint8_t*)addr;
++	uint32_t ret = 0;
++	av_assert0(size <= 4);
++	for ( ; size > 0; size-- ) {
++		ret = (ret << 8) | *p++;
++	}
++	return ret;
++}
++
++/* convert length prefix to start code */
++/* if dst is NULL, convertion operate in src buffer, otherwise convert to dst buffer */
++/* return destination data length, or negative if failed */
++static int length_prefix_to_start_code(size_t length_size,
++				       void* src, size_t src_size,
++				       void* dst, size_t dst_size)
++{
++	uint8_t *s = (uint8_t*)src, *s_end = s + src_size;
++	uint8_t *d_start = (uint8_t*)dst, *d = d_start, *d_end = d + dst_size;
++	uint32_t length;
++	if ( NULL == dst ) {/* inplace operation */
++		if ( length_size < sizeof(start_code) ) {
++			/* inplace operation is impossible, */
++			/* length size less than start code size */
++			return -1;
++		}
++		d_start = d = s;
++		d_end = s_end;
++	}
++	while ( (s + length_size) < s_end ) {
++		if ( (d + sizeof(start_code)) > d_end )
++			return -2;/* dst buffer too small */
++		length = mem_read_int(s, length_size);
++		/* write start code */
++		if ( NULL == dst ) {
++			memset(d, 0, length_size);
++			d += length_size - sizeof(start_code);
++		}
++		memcpy(d, start_code, sizeof(start_code));
++		s += length_size;
++		d += sizeof(start_code);
++		/* write data */
++		if ( (s + length) > s_end )
++			length = s_end - s;
++		if ( (d + length) > d_end )
++			return -2;/* dst buffer too small */
++		if ( NULL != dst ) {
++			memcpy(d, s, length);
++		}
++		s += length;
++		d += length;
++	}
++	return (d - d_start);
++}
++
++static int get_nal(void* bs_buf, size_t bs_len, int *start_ptr, int *len_ptr, enum hevc_nal_unit_type_e *type_ptr)
++{
++	uint8_t *buf;
++	int start, start_next;
++	if ( NULL != start_ptr ) *start_ptr = 0;
++	if ( NULL != len_ptr ) *len_ptr = 0;
++	if ( NULL != type_ptr ) *type_ptr = NAL_UNIT_INVALID;
++	buf = (uint8_t*)bs_buf;
++	// find start code
++	for ( start = 0; start <= (bs_len - sizeof(start_code)); start++ ) {
++		if ( memcmp(buf + start, start_code, sizeof(start_code)) == 0 )
++			break;
++	}
++	if ( start > (bs_len - sizeof(start_code)) )
++		return -1;
++	if ( NULL != start_ptr )
++		*start_ptr = start;
++	if ( NULL != type_ptr ) {
++		if ( bs_len < (start + sizeof(start_code) + 1) )
++			return -2;
++		*type_ptr = (enum hevc_nal_unit_type_e)((buf[start + sizeof(start_code)] >> 1) & 0x3f);
++	}
++	// find next start code
++	if ( NULL != len_ptr ) {
++		for ( start_next = start + sizeof(start_code); start_next <= (bs_len - sizeof(start_code)); start_next++ ) {
++			if ( memcmp(buf + start_next, start_code, sizeof(start_code)) == 0 )
++				break;
++		}
++		if ( start_next > (bs_len - sizeof(start_code)) )
++			start_next = bs_len;
++		*len_ptr = start_next - start;
++	}
++	return 0;
++}
++
++/* input bitstream and output one frame */
++/* return -1 if error occured; */
++/* return  0 if no frame output; */
++/* return  1 if one frame output and no more frame can be output; */
++/* return  2 if one frame output and have more frame can be output(not implement) */
++#define FRAME_FLAG_KEY		0x01/* [output flag] return frame is a key-frame */
++#define FRAME_FLAG_NOREF	0x02/* [output flag] return frame is a non-reference frame */
++#define FRAME_FLAG_FLUSH	0x80/* [input flag] force to flush the remain data if next AU delimiter not found */
++static int reframe(AVCodecContext *avctx, void* data, int size,
++		   uint8_t** frame, int* frame_size, int* frame_flags)
++{
++	uint8_t *pos;
++	int expect_buf_size, remain, is_no_ref, is_key_frame;
++	int nal_start, nal_len, flush;
++	enum hevc_nal_unit_type_e nal_type;
++	LentHEVCDecContext *lent;
++	if ( size < 0 )
++		return -1;
++	lent = (NULL != avctx) ? avctx->priv_data : NULL;
++	if ( NULL == lent )
++		return -1;
++	flush = (*frame_flags & FRAME_FLAG_FLUSH) != 0;
++	*frame = NULL;
++	*frame_size = 0;
++	*frame_flags = 0;
++	/* reframe mode decide */
++	if ( 0 == lent->reframe_buf_size ) {
++		if ( 0 == size )/* flush in uncertain status */
++			return 0;
++		if ( get_nal(data, size, NULL, NULL, &nal_type) >= 0 &&
++		     NAL_UNIT_ACCESS_UNIT_DELIMITER == nal_type ) {
++			lent->reframe_buf = av_malloc(size);
++			if ( NULL == lent->reframe_buf )
++				return -1;
++			lent->reframe_buf_size = size;
++		} else {
++			lent->reframe_buf_size = -1;/* AU delimiter not found, use bypass mode */
++		}
++	}
++	/* bypass mode */
++	if ( lent->reframe_buf_size < 0 ) {
++		*frame = (uint8_t*)data;
++		*frame_size = size;
++	}
++	/* rebuild mode */
++	else {
++		/* remove prevoius frame */
++		av_assert0(lent->reframe_buf_idx >= lent->reframe_buf_offset);
++		if ( lent->reframe_buf_offset > 0 ) {
++			remain = lent->reframe_buf_idx - lent->reframe_buf_offset;
++			if ( remain > 0 )
++				memmove(lent->reframe_buf, lent->reframe_buf + lent->reframe_buf_offset, remain);
++			lent->reframe_buf_idx = remain;
++			lent->reframe_buf_offset = 0;
++		}
++		/* copy packet to reframe buffer */
++		expect_buf_size = lent->reframe_buf_idx + size;
++		if ( expect_buf_size > lent->reframe_buf_size ) {
++			lent->reframe_buf = av_realloc_f(lent->reframe_buf, expect_buf_size, 1);
++			if ( NULL == lent->reframe_buf ) {
++				lent->reframe_buf_size = 0;
++				return -1;
++			}
++			lent->reframe_buf_size = expect_buf_size;
++		}
++		if ( size > 0 )
++			memcpy(lent->reframe_buf + lent->reframe_buf_idx, data, size);
++		lent->reframe_buf_idx += size;
++		/* find first AU delimiter */
++		pos = lent->reframe_buf;
++		remain = lent->reframe_buf_idx;
++		if ( get_nal(pos, remain, &nal_start, &nal_len, &nal_type) < 0 )
++			return 0;
++		*frame = pos;
++		if ( NAL_UNIT_ACCESS_UNIT_DELIMITER == nal_type )
++			*frame  = pos + nal_start;
++		pos    += nal_start + nal_len;
++		remain -= nal_start + nal_len;
++		/* find next AU delimiter */
++		while ( remain > 0 && get_nal(pos, remain, &nal_start, &nal_len, &nal_type) >= 0 ) {
++			if ( NAL_UNIT_ACCESS_UNIT_DELIMITER == nal_type )
++				break;
++			pos    += nal_start + nal_len;
++			remain -= nal_start + nal_len;
++		}
++		if ( !(remain > 0 && NAL_UNIT_ACCESS_UNIT_DELIMITER == nal_type) ) {/* next AU delimiter not found */
++			if ( flush ) {
++				pos += remain;/* flush remain data */
++				remain = 0;
++			} else {
++				return 0;/* wait more data */
++			}
++		}
++		*frame_size = pos - *frame;
++		lent->reframe_buf_offset = pos - lent->reframe_buf;
++	}
++	/* find frame flags */
++	pos = *frame;
++	remain = *frame_size;
++	is_no_ref = 1;
++	is_key_frame = 0;
++	while ( remain > 0 && get_nal(pos, remain, &nal_start, &nal_len, &nal_type) >= 0 ) {
++	  if ( NAL_UNIT_CODED_SLICE_TRAIL_N != nal_type &&
++	       NAL_UNIT_ACCESS_UNIT_DELIMITER != nal_type &&
++	       NAL_UNIT_SEI != nal_type &&
++	       NAL_UNIT_SEI_SUFFIX != nal_type )
++	    is_no_ref = 0;
++	  if ( NAL_UNIT_CODED_SLICE_BLA      == nal_type ||
++	       NAL_UNIT_CODED_SLICE_BLANT    == nal_type ||
++	       NAL_UNIT_CODED_SLICE_BLA_N_LP == nal_type ||
++	       NAL_UNIT_CODED_SLICE_IDR      == nal_type ||
++	       NAL_UNIT_CODED_SLICE_IDR_N_LP == nal_type ||
++	       NAL_UNIT_CODED_SLICE_CRA      == nal_type ) {
++	    is_key_frame = 1;
++	  }
++	  pos    += nal_start + nal_len;
++	  remain -= nal_start + nal_len;
++	}
++	*frame_flags = (is_no_ref ? FRAME_FLAG_NOREF : 0) | (is_key_frame ? FRAME_FLAG_KEY : 0);
++	return (*frame_size > 0 ) ? 1 : 0;
++}
++
++/* data contain "avcC" box data */
++static int lent_hevc_dec_decode_extradata(AVCodecContext *avctx,
++					  void* data, int size)
++{
++	int bytes_used, got_frame, w, h, stride[3];
++	int64_t pts;
++	uint8_t* pixels[3];
++	uint8_t *p, *p_end, *seq_hdr_buf;
++	int seq_hdr_buf_size, seq_hdr_len, sps_count, pps_count, nal_len, i;
++	LentHEVCDecContext *lent = (NULL != avctx) ? avctx->priv_data : NULL;
++	lenthevcdec_ctx	dec = (NULL != lent) ? lent->dec : NULL;
++
++	if ( NULL == avctx || NULL == dec )
++		return AVERROR_EXTERNAL;
++	if ( size < 3 )
++		return AVERROR_INVALIDDATA;
++
++	p = (uint8_t*)data;
++	p_end = p + size;
++	seq_hdr_buf = NULL;
++	seq_hdr_len = 0;
++
++	/* for NALUs */
++	if ( p[0] == 0 && p[1] == 0 && (p[2] == 1 || (size >= 4 && p[2] == 0 && p[3] == 1)) ) {
++		seq_hdr_buf = p;
++		seq_hdr_len = size;
++	}
++	/* for AVCDecoderConfigurationRecord in AVCc box */
++	else if ( p[0] == 1 ) { /* configurationVersion==1 */
++
++		if ( size < 7 )
++			return AVERROR_INVALIDDATA;
++		seq_hdr_buf_size = size * 2;
++		seq_hdr_buf = (uint8_t*)av_malloc(seq_hdr_buf_size);
++		if ( NULL == seq_hdr_buf )
++			return AVERROR_EXTERNAL;
++		seq_hdr_len = 0;
++
++		/* parse length size */
++		lent->length_size = (p[4] & 0x03) + 1;
++	
++		/* extract SPS from avcC */
++		sps_count = p[5] & 0x1F;
++		p += 6;
++		for ( i = 0; i < sps_count && (p + 2) < p_end; i++ ) {
++			/* get nal length */
++			nal_len = ((int)p[0] << 8) | ((int)p[1]);
++			if ( (p + nal_len) > p_end ||
++			     (seq_hdr_len + sizeof(start_code) + nal_len) > seq_hdr_buf_size )
++				break;/* buffer overflow */
++			/* write nal start code */
++			memcpy(seq_hdr_buf + seq_hdr_len, start_code, sizeof(start_code));
++			p += 2;
++			seq_hdr_len += sizeof(start_code);
++			/* write nal payload */
++			memcpy(seq_hdr_buf + seq_hdr_len, p, nal_len);
++			p += nal_len;
++			seq_hdr_len += nal_len;
++		}
++		if ( i < sps_count ) {
++			av_freep(&seq_hdr_buf);
++			return AVERROR_INVALIDDATA;
++		}
++	
++		/* extract PPS from avcC */
++		pps_count = *p++;
++		for ( i = 0; i < pps_count && (p + 2) < p_end; i++ ) {
++			/* get nal length */
++			nal_len = ((int)p[0] << 8) | ((int)p[1]);
++			if ( (p + nal_len) > p_end ||
++			     (seq_hdr_len + sizeof(start_code) + nal_len) > seq_hdr_buf_size )
++				break;/* buffer overflow */
++			/* write nal start code */
++			memcpy(seq_hdr_buf + seq_hdr_len, start_code, sizeof(start_code));
++			p += 2;
++			seq_hdr_len += sizeof(start_code);
++			/* write nal payload */
++			memcpy(seq_hdr_buf + seq_hdr_len, p, nal_len);
++			p += nal_len;
++			seq_hdr_len += nal_len;
++		}
++		if ( i < pps_count ) {
++			av_freep(&seq_hdr_buf);
++			return AVERROR_INVALIDDATA;
++		}
++	} else {
++		av_assert1( 0 );
++		av_log(avctx, AV_LOG_WARNING,
++		       "extra data type unknown! [%02x %02x %02x ...]\n",
++		       p[0], p[1], p[2]);
++	}
++	if ( seq_hdr_len <= 0 )
++		return 0;
++	
++	/* decode sequence header */
++	w = h = 0;
++	bytes_used = lenthevcdec_decode_frame(dec, seq_hdr_buf, seq_hdr_len, 0,
++					      &got_frame, &w, &h, stride,
++					      (void**)pixels, &pts);
++	if ( seq_hdr_buf != (uint8_t*)data )
++		av_freep(&seq_hdr_buf);
++	if ( bytes_used < 0 && 0 == w && 0 == h ) {
++		/* liblenthevcdec expect whole frame input one time, in this case, we */
++		/* 	only sequence header, no any slice data, so call will be failed, */
++		/* 	but width and height maybe update right */
++		return AVERROR_INVALIDDATA;
++	}
++	if ( 0 != w && 0 != h && (w != avctx->width || h != avctx->height) ) {
++		av_log(avctx,AV_LOG_INFO, "dimension change! %dx%d -> %dx%d\n",
++		       avctx->width, avctx->height, w, h);
++		if ( av_image_check_size(w, h, 0, avctx) )
++			return AVERROR_INVALIDDATA;
++		avcodec_set_dimensions(avctx, w, h);
++	}
++	return 0;
++}
++
++
++static av_cold int lent_hevc_dec_init(AVCodecContext *avctx)
++{
++	int32_t compatibility, ret;
++	LentHEVCDecContext *lent = avctx->priv_data;
++	if ( AV_CODEC_ID_HEVC_HM91 == avctx->codec_id )
++		compatibility = 91; /* HM9.1 */
++	else if ( AV_CODEC_ID_HEVC_HM10 == avctx->codec_id )
++		compatibility = 100; /* HM10.0 */
++	else
++		compatibility = INT32_MAX; /* use last version */
++	lent->length_size = 0; /* means user start code, we donot need convert */
++	lent->temp_buf = NULL;
++	lent->temp_buf_size = 0;
++	lent->reframe_buf = NULL;
++	lent->reframe_buf_size = 0;
++	lent->reframe_buf_idx = 0;
++	lent->reframe_buf_offset = 0;
++	lent->threads = (avctx->thread_count < 8) ? avctx->thread_count : 8;
++	if ( lent->threads == 0 ) { /* Auto threads */
++		int cores = av_cpu_count();
++		lent->threads = (cores > 1) ? ((cores < 4) ? (cores * 2) : 8) : 1;
++		av_log(avctx,AV_LOG_INFO, "%d cpu core(s) detected, use %d thread(s)\n", cores, lent->threads);
++	}
++	lent->dec = lenthevcdec_create(lent->threads, compatibility, NULL);
++	if ( NULL == lent->dec )
++		return AVERROR_EXTERNAL;
++	if ( avctx->extradata_size > 0 && avctx->extradata ) {
++		ret = lent_hevc_dec_decode_extradata(avctx, avctx->extradata,
++						     avctx->extradata_size);
++		if ( ret < 0 ) {
++			lenthevcdec_destroy(lent->dec);
++			return ret;
++		}
++	}
++	avctx->pix_fmt = PIX_FMT_YUV420P;
++	return 0;
++}
++
++static av_cold int lent_hevc_dec_close(AVCodecContext *avctx)
++{
++	LentHEVCDecContext *lent = avctx->priv_data;
++	if ( NULL != lent->dec ) {
++		lenthevcdec_destroy(lent->dec);
++		lent->dec = NULL;
++		if ( NULL != lent->temp_buf )
++			av_freep(&lent->temp_buf);
++		if ( NULL != lent->reframe_buf )
++			av_freep(&lent->reframe_buf);
++	}
++	return 0;
++ }
++
++static int lent_hevc_dec_decode(AVCodecContext *avctx, void *data,
++				int *got_frame, AVPacket *avpkt)
++{
++	LentHEVCDecContext *lent = avctx->priv_data;
++	AVFrame *pict = data;
++	uint8_t *buf = avpkt->data;
++	int buf_size = avpkt->size;
++	uint8_t *frame = NULL;
++	int frame_size = 0, frame_flags = 0;
++	int ret, frame_flush, bytes_used, w, h;
++	int64_t pts;
++	if ( NULL == lent->dec )
++		return -1;
++	*got_frame = 0;
++	/* rebuild frame from input bitstream */
++	/* first, we flush the inner reframe buffer for big-packet that contain multi-frame in on packet */
++	frame_flags = 0;
++	ret = reframe(avctx, NULL, 0, &frame, &frame_size, &frame_flags);
++	if ( ret > 0 ) {
++		/* flush inner reframe buffer */
++		frame_flush = 1;
++	} else {
++		frame_flush = 0;
++		/* convert length prefix to start code */
++		if ( buf_size > 0 && 0 != lent->length_size ) {
++			int len_size = lent->length_size;
++			av_assert0(len_size <= 4);
++			if ( len_size < 3 ) { /* we must expan data buffer */
++				int expand_size = buf_size * 3;
++				if ( NULL == lent->temp_buf || lent->temp_buf_size < expand_size ) {
++					lent->temp_buf = av_realloc_f(lent->temp_buf, expand_size, 1);
++					if ( NULL == lent->temp_buf ) {
++						lent->temp_buf_size = 0;
++						return -1;
++					}
++					lent->temp_buf_size = expand_size;
++				}
++				buf_size = length_prefix_to_start_code(len_size, buf, buf_size,
++								       lent->temp_buf, lent->temp_buf_size);
++				if ( buf_size < 0 )
++					return -1;
++				buf = lent->temp_buf;
++			} else { /* replace length prefix with start code */
++				buf_size = length_prefix_to_start_code(len_size, buf, buf_size, NULL, 0);
++				if ( buf_size < 0 )
++					return -1;
++			}
++		}
++		/* second, we use input packet data to rebuild frame */
++		if ( 0 == buf_size )/* ffmpeg flush decoder */
++			frame_flags = FRAME_FLAG_FLUSH;/* if next AU delimiter not found, flush remain data */
++		ret = reframe(avctx, buf, buf_size, &frame, &frame_size, &frame_flags);
++		if ( ret < 0 )
++			return ret;
++		if ( 0 == ret && NULL != buf ) {
++			/* no frame output, wait more data intput */
++			return avpkt->size;
++		}
++	}
++
++	/* discard */
++	if ( buf_size > 0 && (avctx->skip_frame >= AVDISCARD_NONREF || lent->drop_ref) ) {
++		int is_no_ref = (frame_flags & FRAME_FLAG_NOREF) != 0;
++		int is_key_frame = (frame_flags & FRAME_FLAG_KEY) != 0;
++		if ( lent->drop_ref && !is_key_frame ) {
++			av_log(avctx, AV_LOG_VERBOSE, "skip nonkey frame because reference frame droped. dts:%s pts:%s\n",
++			       av_ts2str(avpkt->dts), av_ts2str(avpkt->pts));
++			return avpkt->size;
++		}
++		if ( is_key_frame )
++			lent->drop_ref = 0;
++		if ( avctx->skip_frame >= AVDISCARD_NONREF && is_no_ref ) {
++			av_log(avctx, AV_LOG_VERBOSE, "skip no reference frame. dts:%s pts:%s\n",
++			       av_ts2str(avpkt->dts), av_ts2str(avpkt->pts));
++			return avpkt->size;
++		}
++		if ( (avctx->skip_frame == AVDISCARD_NONKEY && !is_key_frame) ||
++		     (avctx->skip_frame == AVDISCARD_ALL) ) {
++			lent->drop_ref = 1;
++			av_log(avctx, AV_LOG_VERBOSE, "skip %s frame. dts:%s pts:%s\n",
++			       is_key_frame ? "key" : "reference", av_ts2str(avpkt->dts), av_ts2str(avpkt->pts));
++			return avpkt->size;
++		}
++	}
++	/* decode one frame */
++	bytes_used = lenthevcdec_decode_frame(lent->dec, frame, frame_size, avpkt->pts,
++					      got_frame, &w, &h, pict->linesize,
++					      (void**) pict->data, &pts);
++	av_log(avctx, AV_LOG_DEBUG, "decode frame: %d bytes, used %d, got_frame %d, w %d, h %d, pts %s\n",
++	       frame_size, bytes_used, *got_frame, w, h, av_ts2str((*got_frame<=0)?AV_NOPTS_VALUE:pts));
++	if ( bytes_used < 0 )
++		return AVERROR_INVALIDDATA;
++	if ( 0 != w && 0 != h && (w != avctx->width || h != avctx->height) ) {
++		av_log(avctx,AV_LOG_INFO, "dimension change! %dx%d -> %dx%d\n",
++		       avctx->width, avctx->height, w, h);
++		if ( av_image_check_size(w, h, 0, avctx) )
++			return AVERROR_INVALIDDATA;
++		avcodec_set_dimensions(avctx, w, h);
++	}
++	if ( 0 ==  bytes_used ) {
++		bytes_used = 1; /* avoid infinite loops */
++	}
++	if ( *got_frame <= 0 ) {
++		av_log(avctx, AV_LOG_VERBOSE, "no frame output\n");
++		return /*bytes_used*/avpkt->size;
++	}
++	pict->data[3] = NULL;
++	pict->linesize[3] = 0;
++	pict->pict_type = AV_PICTURE_TYPE_I;
++	pict->key_frame = 1;
++	pict->pts = pts;
++	pict->pkt_pts = pts;
++	av_log(avctx, AV_LOG_DEBUG, "got frame, pts = %s\n", av_ts2str(pict->pts));
++	return frame_flush ? 0 : (/* bytes_used */avpkt->size);
++}
++
++static void lent_hevc_dec_flush(AVCodecContext *avctx)
++{
++	LentHEVCDecContext *lent = avctx->priv_data;
++	if ( NULL == lent->dec )
++		return;
++	/* set discontinuity flash */
++	lent->drop_ref = 1;
++	/* clear reframe buffer */
++	lent->reframe_buf_idx = 0;
++	lent->reframe_buf_offset = 0;
++}
++
++
++AVCodec ff_liblenthevchm91_decoder = {
++	.name		= "liblenthevchm91",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC_HM91,
++	.priv_data_size	= sizeof(LentHEVCDecContext),
++	.init		= lent_hevc_dec_init,
++	.close		= lent_hevc_dec_close,
++	.decode		= lent_hevc_dec_decode,
++	.flush		= lent_hevc_dec_flush,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM9.1)"),
++	.pix_fmts	= (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
++};
++
++AVCodec ff_liblenthevchm10_decoder = {
++	.name		= "liblenthevchm10",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC_HM10,
++	.priv_data_size	= sizeof(LentHEVCDecContext),
++	.init		= lent_hevc_dec_init,
++	.close		= lent_hevc_dec_close,
++	.decode		= lent_hevc_dec_decode,
++	.flush		= lent_hevc_dec_flush,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM10.0)"),
++	.pix_fmts	= (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
++};
++
++AVCodec ff_liblenthevc_decoder = {
++	.name		= "liblenthevc",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC,
++	.priv_data_size	= sizeof(LentHEVCDecContext),
++	.init		= lent_hevc_dec_init,
++	.close		= lent_hevc_dec_close,
++	.decode		= lent_hevc_dec_decode,
++	.flush		= lent_hevc_dec_flush,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC"),
++	.pix_fmts	= (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
++};
+diff --git a/libavcodec/liblenthevcenc.c b/libavcodec/liblenthevcenc.c
+new file mode 100644
+index 0000000..f02cd85
+--- /dev/null
++++ b/libavcodec/liblenthevcenc.c
+@@ -0,0 +1,538 @@
++/*
++ * HEVC encoding using the Strongene Lentoid HEVC encoder
++ * Copyright (C) 2013 Strongene Inc.
++ * James.DF <service@strongene.com>
++ */
++
++#include "config.h"
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <strings.h>
++#if HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++#if HAVE_IO_H
++#include <io.h>
++#endif
++#include "../libavutil/opt.h"
++#include "../libavutil/common.h"
++#include "../libavutil/imgutils.h"
++#include "../libavutil/avassert.h"
++#include "../libavutil/timestamp.h"
++#include "avcodec.h"
++#include "internal.h"
++#include "lenthevcenc.h"
++
++#ifndef COUNTOF
++#define COUNTOF(a) (sizeof(a)/sizeof((a)[0]))
++#endif
++
++#define HM_COMPATIBILITY_LAST	120 /* the last version is 120 currently */
++#define LENTHEVCENC_THREADS_DEFAULT 5
++
++typedef struct LENTPIC {
++	uint32_t width;
++	uint32_t height;
++	uint8_t* data[3];
++	int32_t stride[3];
++	int64_t pts;
++} LENTPIC;
++
++typedef struct LentHEVCEncContext {
++	AVClass * class;
++	lenthevcenc_ctx enc;
++	lenthevcenc_create_param param;
++	char * preset_name;
++	int thread_wpp;
++	int disable_sei;
++	char * hm_compatibility;
++	char * recon_name;
++	FILE * recon_file;
++	int recon_reorder_size;
++	int recon_reorder_len;
++	LENTPIC * recon_reorder_pics;
++} LentHEVCEncContext;
++
++static int alloc_pic(LENTPIC *pic, uint32_t width, uint32_t height)
++{
++	if ( NULL == pic || 0 == width || 0 == height )
++		return AVERROR(EINVAL);
++	memset(pic, 0, sizeof(*pic));
++	pic->width = width;
++	pic->height = height;
++	pic->stride[2] = pic->stride[1] = (pic->stride[0] = width) / 2;
++	pic->pts = 0;
++	pic->data[0] = av_malloc(width * height * 3 / 2);
++	if ( NULL == pic->data[0] )
++		return AVERROR(ENOMEM);
++	pic->data[1] = pic->data[0] + width * height;
++	pic->data[2] = pic->data[1] + width * height / 4;
++	return 0;
++}
++
++static void free_pic(LENTPIC *pic)
++{
++	if ( NULL != pic ) {
++		av_free(pic->data[0]);
++		memset(pic, 0, sizeof(*pic));
++	}
++}
++
++static int fwrite_pic(FILE *fp, LENTPIC *pic)
++{
++	int plane, line, width, height, stride;
++	uint8_t *data;
++	if ( NULL == fp )
++		return 0;
++	if ( NULL == pic ||
++	     NULL == pic->data[0] || NULL == pic->data[1] || NULL == pic->data[2] ||
++	     pic->width <= 0 || pic->height <= 0 )
++		return AVERROR(EINVAL);
++	for ( plane = 0; plane < 3; plane++ ) {
++		width  = pic->width  >> ((plane > 0) ? 1 : 0);
++		height = pic->height >> ((plane > 0) ? 1 : 0);
++		stride = pic->stride[plane];
++		data = pic->data[plane];
++		for ( line = 0; line < height; line++ ) {
++			fwrite(data, 1, width, fp);
++			data += stride;
++		}
++	}
++	return 0;
++}
++
++static int pic_cpy(LENTPIC *dst, LENTPIC *src)
++{
++	int plane, line, width, height, stride_src, stride_dst;
++	uint8_t *data_src, *data_dst;
++	if ( NULL == dst || NULL == src ||
++	     NULL == dst->data[0] || NULL == dst->data[1] || NULL == dst->data[2] ||
++	     NULL == src->data[0] || NULL == src->data[1] || NULL == src->data[2] )
++		return AVERROR(EINVAL);
++	dst->pts = src->pts;
++	for ( plane = 0; plane < 3; plane++ ) {
++		width  = FFMIN(dst->width , src->width ) >> ((plane > 0) ? 1 : 0);
++		height = FFMIN(dst->height, src->height) >> ((plane > 0) ? 1 : 0);
++		stride_dst = dst->stride[plane];
++		stride_src = src->stride[plane];
++		data_dst = dst->data[plane];
++		data_src = src->data[plane];
++		for ( line = 0; line < height; line++ ) {
++			memcpy(data_dst, data_src, width);
++			data_dst += stride_dst;
++			data_src += stride_src;
++		}
++	}
++	return 0;
++}
++
++#define PIC_SWAP(pic1, pic2) { LENTPIC tmp = *(pic1); *(pic1) = *(pic2); *(pic2) = tmp; }
++
++static int output_recon(AVCodecContext *avctx, LENTPIC * pic)
++{
++	LentHEVCEncContext *lent = avctx->priv_data;
++	LENTPIC *reorder_pics = lent->recon_reorder_pics;
++	const int reorder_size = lent->recon_reorder_size;
++	int i, ret, reorder_len = lent->recon_reorder_len;
++	// no b frames, output reconstruction picture
++	if ( NULL == reorder_pics || 0 == reorder_size ) {
++		return fwrite_pic(lent->recon_file, pic);
++	}
++	// with b frames, reorder reconstruction picture with PTS, and output it
++	ret = pic_cpy(&reorder_pics[reorder_len], pic);
++	if ( ret < 0 )
++		return ret;
++	reorder_len++;
++	// PTS descending order
++	for ( i = reorder_len - 1; i > 0; i-- )
++		if ( reorder_pics[i].pts > reorder_pics[i - 1].pts )
++			PIC_SWAP(&reorder_pics[i], &reorder_pics[i - 1]);
++	// output picture with mimimum PTS
++	ret = 0;
++	if ( reorder_len == reorder_size ) {
++		ret = fwrite_pic(lent->recon_file, &reorder_pics[reorder_len - 1]);
++		av_log(avctx, AV_LOG_DEBUG, "Output reconstruction picture, pts = %s\n",
++		       av_ts2str(reorder_pics[reorder_len - 1].pts));
++		reorder_len--;
++	}
++	lent->recon_reorder_len = reorder_len;
++	return ret;
++}
++
++static int flush_recon(AVCodecContext *avctx)
++{
++	LentHEVCEncContext *lent = avctx->priv_data;
++	LENTPIC *reorder_pics = lent->recon_reorder_pics;
++	int i, ret, reorder_len = lent->recon_reorder_len;
++	if ( NULL == reorder_pics || 0 == lent->recon_reorder_size )
++		return 0;
++	for ( i = reorder_len - 1; i >= 0; i-- ) {
++		ret = fwrite_pic(lent->recon_file, &reorder_pics[i]);
++		if ( ret < 0 )
++			break;
++		av_log(avctx, AV_LOG_DEBUG, "Flush reconstruction picture, pts = %s\n",
++		       av_ts2str(reorder_pics[i].pts));
++	}
++	lent->recon_reorder_len = 0;
++	return ret;
++}
++
++
++
++static av_cold int lent_hevc_enc_init(AVCodecContext *avctx)
++{
++	static const char * preset_name_tbl[] = {
++		"ultrafast",
++		"fast",
++		"medium",
++		"slow",
++		"ultraslow",	// default
++	};
++	LentHEVCEncContext *lent = avctx->priv_data;
++	char *preset_name = lent->preset_name;
++	int idx, compatibility;
++	lent->enc = NULL;
++	lent->recon_file = NULL;
++	lent->recon_reorder_size = 0;
++	lent->recon_reorder_len = 0;
++	lent->recon_reorder_pics = NULL;
++	memset(&lent->param, 0, sizeof(lent->param));
++	lent->param.size = sizeof(lent->param);
++	lenthevcenc_default_param( &lent->param );
++	for ( idx = 0; NULL != preset_name && idx < COUNTOF(preset_name_tbl); idx++ ) {
++		if ( strcasecmp(preset_name, preset_name_tbl[idx]) == 0 )
++			break;
++	}
++	if ( COUNTOF(preset_name_tbl) == idx ) {
++		av_log(avctx, AV_LOG_ERROR, "Error setting preset %s.\n", preset_name);
++		av_log(avctx, AV_LOG_INFO, "Possible presets:");
++		for ( idx = 0; idx < COUNTOF(preset_name_tbl); idx++ )
++			av_log(avctx, AV_LOG_INFO, " %s", preset_name_tbl[idx]);
++		av_log(avctx, AV_LOG_INFO, "\n");
++		return AVERROR(EINVAL);
++	}
++	lent->param.preset = idx;
++	if ( avctx->thread_count == 0 )
++		lent->param.frame_threads = LENTHEVCENC_THREADS_DEFAULT;
++	else if ( avctx->thread_count > 0 )
++		lent->param.frame_threads = avctx->thread_count;
++	if ( lent->thread_wpp > 0 )
++		lent->param.wpp_threads = lent->thread_wpp;
++	lent->param.sei_flag = (lent->disable_sei == 0);
++	if ( AV_CODEC_ID_HEVC_HM91 == avctx->codec_id ) {
++		compatibility = 91; /* HM9.1 */
++	} else if ( AV_CODEC_ID_HEVC_HM10 == avctx->codec_id ) {
++		compatibility = 100; /* HM10.0 */
++	} else {
++		if ( strcasecmp(lent->hm_compatibility, "last") == 0 ) {
++			compatibility = HM_COMPATIBILITY_LAST;
++		} else {
++			double hm_ver;
++			if ( sscanf(lent->hm_compatibility, "%lf", &hm_ver) != 1 ) {
++				av_log(avctx, AV_LOG_ERROR, "Error setting HM compatibility '%s'.\n", lent->hm_compatibility);
++				return AVERROR(EINVAL);
++			}
++			compatibility = (int)((hm_ver + 0.05) * 10);
++			if ( compatibility < 91 || compatibility > HM_COMPATIBILITY_LAST ) {
++				av_log(avctx, AV_LOG_ERROR, "Unsupported HM version '%.1f'.\n", compatibility / 10.0);
++				return AVERROR(EINVAL);
++			}
++		}
++	}
++	lent->param.compatibility = compatibility;
++	lent->param.log_level = (av_log_get_level() >= AV_LOG_INFO);
++	if ( avctx->keyint_min > 0 )
++		lent->param.idr_period_min = avctx->keyint_min;
++	lent->param.idr_period_max = lent->param.idr_period_min;	// fix me !!!
++	if ( avctx->time_base.num != 0 && avctx->time_base.den != 0 ) {
++		lent->param.fps_num = avctx->time_base.den;
++		lent->param.fps_den = avctx->time_base.num;
++	}
++	lent->param.width = avctx->width;
++	lent->param.height = avctx->height;
++	if ( avctx->width % 8 != 0 || avctx->height % 8 != 0 )
++		av_log(avctx, AV_LOG_WARNING, "Width(%d) or height(%d) is not a multiple of 8!\n", avctx->width, avctx->height);
++	if ( avctx->bit_rate > 0 ) {
++		lent->param.rc_mode = LENTHEVCENC_RCMODE_ABR;
++		lent->param.bitrate = avctx->bit_rate / 1000;
++	}
++	if ( avctx->flags & CODEC_FLAG_QSCALE ) {
++		lent->param.rc_mode = LENTHEVCENC_RCMODE_CQP;
++		lent->param.qp = avctx->global_quality / FF_QP2LAMBDA;
++	}
++	lent->enc = lenthevcenc_create( &lent->param );
++	if ( NULL == lent->enc ) {
++		av_log(avctx, AV_LOG_ERROR, "call lenthevcenc_create failed!\n");
++		return AVERROR_EXTERNAL;
++	}
++	if ( lent->param.compatibility != compatibility ) {
++		av_log(avctx, AV_LOG_ERROR,
++		       "Specified version %.1f is not available, the available version is %.1f\n",
++		       compatibility/10.0, lent->param.compatibility/10.0);
++		lenthevcenc_destroy( lent->enc );
++		lent->enc = NULL;
++		return AVERROR_EXTERNAL;
++	}
++	// avctx->has_b_frames = lent->param.i_bframe ? (lent->param.i_hierach_bframe + 1) : 0;
++	avctx->has_b_frames = 2; // to do: calcuate from encoder parameters ...
++	avctx->coded_frame = avcodec_alloc_frame();
++	if ( NULL == avctx->coded_frame ) {
++		av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
++		lenthevcenc_destroy( lent->enc );
++		lent->enc = NULL;
++		return AVERROR(ENOMEM);
++	}
++	if ( avctx->flags & CODEC_FLAG_GLOBAL_HEADER ) {
++		int seq_hdr_len = lenthevcenc_get_header( lent->enc, NULL, 0 );
++		if ( seq_hdr_len > 0 ) {
++			avctx->extradata = av_malloc(seq_hdr_len);
++			if ( NULL == avctx->extradata ) {
++				av_log(avctx, AV_LOG_ERROR, "Error allocating codec extra data buffer\n");
++				lenthevcenc_destroy( lent->enc );
++				lent->enc = NULL;
++				return AVERROR(ENOMEM);
++			}
++			avctx->extradata_size = lenthevcenc_get_header( lent->enc, avctx->extradata, seq_hdr_len );
++			av_assert0( avctx->extradata_size == seq_hdr_len );
++		}
++	}
++	// open reconstruct file
++	if ( NULL != lent->recon_name && lent->recon_name[0] ) {
++		if ( access(lent->recon_name, F_OK) == 0 ) {
++			av_log(avctx, AV_LOG_ERROR, "File '%s' already existed!\n", lent->recon_name);
++			lenthevcenc_destroy( lent->enc );
++			lent->enc = NULL;
++			return AVERROR(EINVAL);
++		}
++		lent->recon_file = fopen(lent->recon_name, "wb");
++		if ( NULL == lent->recon_file ) {
++			av_log(avctx, AV_LOG_ERROR, "Couldn't create output recon file: %s\n", strerror(errno));
++			lenthevcenc_destroy( lent->enc );
++			lent->enc = NULL;
++			return AVERROR(EINVAL);
++		}
++		/*if ( lent->param.i_bframe > 0 )*/ {
++			lent->recon_reorder_size = 3; // lent->param.i_bframe; // to do ...
++			lent->recon_reorder_pics = av_mallocz(sizeof(LENTPIC) * lent->recon_reorder_size);
++			if ( NULL == lent->recon_reorder_pics ) {
++				av_log(avctx, AV_LOG_ERROR, "Error allocating reconstruction reorder buffer\n");
++				lenthevcenc_destroy( lent->enc );
++				lent->enc = NULL;
++				return AVERROR(ENOMEM);
++			}
++			for ( idx = 0; idx < lent->recon_reorder_size; idx++ ) {
++				if ( alloc_pic(&lent->recon_reorder_pics[idx], avctx->width, avctx->height) < 0 ) {
++					av_log(avctx, AV_LOG_ERROR, "Error allocating reconstruction picture buffer\n");
++					lenthevcenc_destroy( lent->enc );
++					lent->enc = NULL;
++					return AVERROR(ENOMEM);
++				}
++			}
++		}
++	}
++	// info
++	av_log(avctx, AV_LOG_VERBOSE, "Lentoid HEVC Encoder initialize successfully\n");
++	av_log(avctx, AV_LOG_VERBOSE, "compatibility=HM%.1f, size=%dx%d, preset=%s, thread=%d, wpp=%d, sei=%d, log=%d, idr_peroid=%d, %s=%d%s, recon=%s\n",
++	       lent->param.compatibility / 10.0, lent->param.width, lent->param.height,
++	       preset_name_tbl[lent->param.preset], lent->param.frame_threads, lent->param.wpp_threads,
++	       lent->param.sei_flag, lent->param.log_level, lent->param.idr_period_max,
++	       (LENTHEVCENC_RCMODE_CQP == lent->param.rc_mode) ? "QP" : "bitrate",
++	       (LENTHEVCENC_RCMODE_CQP == lent->param.rc_mode) ? lent->param.qp : lent->param.bitrate,
++	       (LENTHEVCENC_RCMODE_CQP == lent->param.rc_mode) ? "" : "kbps",
++	       lent->recon_name ? lent->recon_name : "null");
++	return 0;
++}
++
++static av_cold int lent_hevc_enc_close(AVCodecContext *avctx)
++{
++	LentHEVCEncContext *lent = avctx->priv_data;
++	int i;
++	if ( NULL != lent->enc )
++		lenthevcenc_destroy( lent->enc );
++	if ( NULL != avctx->extradata )
++		av_freep(&avctx->extradata);
++	if ( NULL != lent->recon_reorder_pics ) {
++		flush_recon(avctx);
++		for ( i = 0; i < lent->recon_reorder_size; i++ )
++			free_pic(&lent->recon_reorder_pics[i]);
++		av_freep(&lent->recon_reorder_pics);
++	}
++	if ( NULL != lent->recon_file )
++		fclose(lent->recon_file);
++	if ( NULL != avctx->coded_frame)
++		av_freep(&avctx->coded_frame);
++	return 0;
++}
++
++static int lent_hevc_enc_encode(AVCodecContext *avctx, AVPacket *pkt,
++				const AVFrame *frame, int *got_packet)
++{
++	LentHEVCEncContext *lent = avctx->priv_data;
++	LENTPIC rec_pic;
++	int _in_stride[3], *in_stride, out_bs_len;
++	uint8_t *_in_plane[3], **in_plane, *out_bs_ptr;
++	int64_t in_pts, out_pts;
++	lenthevcenc_encode_param param;
++	int ret;
++	/* get input frame */
++	in_stride = NULL;
++	in_plane = NULL;
++	in_pts = AV_NOPTS_VALUE;
++	memset(&param, 0, sizeof(param));
++	param.size = sizeof(param);
++	if ( NULL != frame ) {
++		in_stride = _in_stride;
++		_in_stride[0] = frame->linesize[0];
++		_in_stride[1] = frame->linesize[1];
++		_in_stride[2] = frame->linesize[2];
++		in_plane = _in_plane;
++		_in_plane[0] = frame->data[0];
++		_in_plane[1] = frame->data[1];
++		_in_plane[2] = frame->data[2];
++		in_pts = frame->pts;
++		if ( AV_PICTURE_TYPE_NONE != frame->pict_type ) {
++			if ( AV_PICTURE_TYPE_I == frame->pict_type )
++				param.frame_type = LENTHEVCENC_Frame_IDR;
++			else if ( AV_PICTURE_TYPE_P == frame->pict_type )
++				param.frame_type = LENTHEVCENC_Frame_P;
++			else if ( AV_PICTURE_TYPE_B == frame->pict_type )
++				param.frame_type = LENTHEVCENC_Frame_B;
++			else {
++				av_log(avctx, AV_LOG_WARNING, "Unsupported picture type %d!",
++					frame->pict_type);
++			}
++		}
++	}
++	/* encode */
++	out_pts = AV_NOPTS_VALUE;
++	out_bs_len = 0;
++	if ( !(NULL == frame && !lenthevcenc_is_encoding(lent->enc)) ) do {
++		out_bs_len = lenthevcenc_encode_frame( lent->enc,
++						       in_stride, (void**)in_plane, in_pts,
++						       &param,
++						       (void**)&out_bs_ptr, &out_pts,
++						       rec_pic.stride, (void**)rec_pic.data);
++		if ( out_bs_len < 0 )
++			return -1;
++		if ( out_bs_len > 0 ) {
++			if ( (ret = ff_alloc_packet2(avctx, pkt, out_bs_len)) < 0 )
++				return ret;
++			memcpy(pkt->data, out_bs_ptr, out_bs_len);
++			if ( NULL != lent->recon_file ) {
++				rec_pic.width = avctx->width;
++				rec_pic.height = avctx->height;
++				rec_pic.pts = out_pts;
++				ret = output_recon(avctx, &rec_pic);
++				if ( 0 != ret )
++					return ret;
++			}
++			break;
++		}
++	} while ( NULL == frame && lenthevcenc_is_encoding(lent->enc) );	// flush
++	pkt->pts = out_pts;
++	pkt->dts = AV_NOPTS_VALUE; // fix me !
++	if ( LENTHEVCENC_Frame_IDR == param.frame_type || LENTHEVCENC_Frame_CDR == param.frame_type )
++		pkt->flags |= AV_PKT_FLAG_KEY;
++	*got_packet = (out_bs_len > 0) ? 1 : 0;
++	if ( out_bs_len > 0 ) {
++		static const char* type_name_tbl[] = {
++			"auto", "IDR ", "CDR ", "I   ", "P   ", "Bref", "B   "
++		};
++		av_log(avctx, AV_LOG_DEBUG, "got packet, type = %s, pts = %s, dts = %s, size = %d\n",
++		       param.frame_type<COUNTOF(type_name_tbl)?type_name_tbl[param.frame_type]:"?   ",
++		       av_ts2str(pkt->pts), av_ts2str(pkt->dts), out_bs_len);
++	}
++	return 0;
++}
++
++
++#define OFFSET(x) offsetof(LentHEVCEncContext, x)
++#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
++static const AVOption options[] = {
++	{ "preset", "Set the encoding preset (\"ultraslow\", \"slow\", \"medium\", \"fast\", \"ultrafast\")",
++	  OFFSET(preset_name), AV_OPT_TYPE_STRING, { .str = "ultraslow" }, 0, 0, VE },
++	{ "wpp",    "Wavefront Parallel Processing",
++	  OFFSET(thread_wpp), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 64, VE },
++	{ "disable_sei", "Disable output SEI NALU",
++	  OFFSET(disable_sei), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
++	{ "HM_compatibility", "Compatible version of HM, \"9.1\" for HM9.1, \"12\" for HM12, Etc., \"last\" specify the latest version supported",
++	  OFFSET(hm_compatibility), AV_OPT_TYPE_STRING, { .str = "last" }, 0, 0, VE },
++	{ "recon", "Output reconstructed picture",
++	  OFFSET(recon_name), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
++	{ NULL },
++};
++
++static const AVClass lenthevc_enc_class = {
++	.class_name = "liblenthevcenc",
++	.item_name  = av_default_item_name,
++	.option     = options,
++	.version    = LIBAVUTIL_VERSION_INT,
++};
++
++static const AVClass lenthevchm10_enc_class = {
++	.class_name = "liblenthevchm10enc",
++	.item_name  = av_default_item_name,
++	.option     = options,
++	.version    = LIBAVUTIL_VERSION_INT,
++};
++
++static const AVClass lenthevchm91_enc_class = {
++	.class_name = "liblenthevchm91enc",
++	.item_name  = av_default_item_name,
++	.option     = options,
++	.version    = LIBAVUTIL_VERSION_INT,
++};
++
++static const AVCodecDefault lenthevc_enc_defaults[] = {
++	{ "threads",    AV_STRINGIFY(LENTHEVCENC_THREADS_DEFAULT) },
++	{ "b",          "1200k" },
++	{ "keyint_min", "200" },
++	{ NULL },
++};
++
++AVCodec ff_liblenthevc_encoder = {
++	.name		= "liblenthevc",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC,
++	.priv_data_size	= sizeof(LentHEVCEncContext),
++	.init		= lent_hevc_enc_init,
++	.close		= lent_hevc_enc_close,
++	.encode2	= lent_hevc_enc_encode,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC"),
++	.pix_fmts	= (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, PIX_FMT_NONE },
++	.priv_class	= &lenthevc_enc_class,
++	.defaults       = lenthevc_enc_defaults,
++};
++
++AVCodec ff_liblenthevchm10_encoder = {
++	.name		= "liblenthevchm10",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC_HM10,
++	.priv_data_size	= sizeof(LentHEVCEncContext),
++	.init		= lent_hevc_enc_init,
++	.close		= lent_hevc_enc_close,
++	.encode2	= lent_hevc_enc_encode,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM10.0)"),
++	.pix_fmts	= (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, PIX_FMT_NONE },
++	.priv_class	= &lenthevchm10_enc_class,
++	.defaults       = lenthevc_enc_defaults,
++};
++
++AVCodec ff_liblenthevchm91_encoder = {
++	.name		= "liblenthevchm91",
++	.type		= AVMEDIA_TYPE_VIDEO,
++	.id		= AV_CODEC_ID_HEVC_HM91,
++	.priv_data_size	= sizeof(LentHEVCEncContext),
++	.init		= lent_hevc_enc_init,
++	.close		= lent_hevc_enc_close,
++	.encode2	= lent_hevc_enc_encode,
++	.capabilities	= CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
++	.long_name	= NULL_IF_CONFIG_SMALL("Strongene Lentoid HEVC (HM9.1)"),
++	.pix_fmts	= (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, PIX_FMT_NONE },
++	.priv_class	= &lenthevchm91_enc_class,
++	.defaults       = lenthevc_enc_defaults,
++};
+diff --git a/libavformat/Makefile b/libavformat/Makefile
+index cc4a4cb..56e01ef 100644
+--- a/libavformat/Makefile
++++ b/libavformat/Makefile
+@@ -105,6 +105,7 @@ OBJS-$(CONFIG_CAVSVIDEO_MUXER)           += rawenc.o
+ OBJS-$(CONFIG_CDG_DEMUXER)               += cdg.o
+ OBJS-$(CONFIG_CDXL_DEMUXER)              += cdxl.o
+ OBJS-$(CONFIG_CONCAT_DEMUXER)            += concatdec.o
++OBJS-$(CONFIG_SCONCAT_DEMUXER)           += sconcatdec.o
+ OBJS-$(CONFIG_CRC_MUXER)                 += crcenc.o
+ OBJS-$(CONFIG_DATA_DEMUXER)              += rawdec.o
+ OBJS-$(CONFIG_DATA_MUXER)                += rawdec.o
+diff --git a/libavformat/allformats.c b/libavformat/allformats.c
+index 6bba812..71220c9 100644
+--- a/libavformat/allformats.c
++++ b/libavformat/allformats.c
+@@ -100,6 +100,7 @@ void av_register_all(void)
+     REGISTER_DEMUXER (CDG,              cdg);
+     REGISTER_DEMUXER (CDXL,             cdxl);
+     REGISTER_DEMUXER (CONCAT,           concat);
++    REGISTER_DEMUXER (SCONCAT,          sconcat);
+     REGISTER_MUXER   (CRC,              crc);
+     REGISTER_MUXDEMUX(DATA,             data);
+     REGISTER_MUXDEMUX(DAUD,             daud);
+diff --git a/libavformat/flv.h b/libavformat/flv.h
+index db9468f..6caae14 100644
+--- a/libavformat/flv.h
++++ b/libavformat/flv.h
+@@ -109,6 +109,9 @@ enum {
+     FLV_CODECID_H264    = 7,
+     FLV_CODECID_REALH263= 8,
+     FLV_CODECID_MPEG4   = 9,
++    FLV_CODECID_HEVC_HM91=12,
++    FLV_CODECID_HEVC_HM10=13,
++    FLV_CODECID_HEVC    =14,
+ };
+ 
+ enum {
+diff --git a/libavformat/flvdec.c b/libavformat/flvdec.c
+index 69e2bee..caf5afc 100644
+--- a/libavformat/flvdec.c
++++ b/libavformat/flvdec.c
+@@ -194,6 +194,12 @@ static int flv_same_video_codec(AVCodecContext *vcodec, int flags)
+             return vcodec->codec_id == AV_CODEC_ID_VP6A;
+         case FLV_CODECID_H264:
+             return vcodec->codec_id == AV_CODEC_ID_H264;
++        case FLV_CODECID_HEVC_HM91:/* HEVC (HM9.1) of Strongene */
++            return vcodec->codec_id = AV_CODEC_ID_HEVC_HM91;
++        case FLV_CODECID_HEVC_HM10:/* HEVC (HM10.0) of Strongene */
++            return vcodec->codec_id = AV_CODEC_ID_HEVC_HM10;
++        case FLV_CODECID_HEVC:/* HEVC of Strongene */
++            return vcodec->codec_id = AV_CODEC_ID_HEVC;
+         default:
+             return vcodec->codec_tag == flv_codecid;
+     }
+@@ -228,6 +234,15 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
+         case FLV_CODECID_MPEG4:
+             vcodec->codec_id = AV_CODEC_ID_MPEG4;
+             return 3;
++        case FLV_CODECID_HEVC_HM91:
++            vcodec->codec_id = AV_CODEC_ID_HEVC_HM91;
++            return 3; // same as H.264
++        case FLV_CODECID_HEVC_HM10:
++            vcodec->codec_id = AV_CODEC_ID_HEVC_HM10;
++            return 3; // same as H.264
++        case FLV_CODECID_HEVC:
++            vcodec->codec_id = AV_CODEC_ID_HEVC;
++            return 3; // same as H.264
+         default:
+             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
+             vcodec->codec_tag = flv_codecid;
+@@ -815,10 +830,15 @@ retry_duration:
+ 
+     if (st->codec->codec_id == AV_CODEC_ID_AAC ||
+         st->codec->codec_id == AV_CODEC_ID_H264 ||
+-        st->codec->codec_id == AV_CODEC_ID_MPEG4) {
++        st->codec->codec_id == AV_CODEC_ID_MPEG4 ||
++        st->codec->codec_id == AV_CODEC_ID_HEVC_HM91 ||
++        st->codec->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++        st->codec->codec_id == AV_CODEC_ID_HEVC) {
+         int type = avio_r8(s->pb);
+         size--;
+-        if (st->codec->codec_id == AV_CODEC_ID_H264 || st->codec->codec_id == AV_CODEC_ID_MPEG4) {
++        if (st->codec->codec_id == AV_CODEC_ID_H264 || st->codec->codec_id == AV_CODEC_ID_MPEG4 ||
++            st->codec->codec_id == AV_CODEC_ID_HEVC_HM91 || st->codec->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++            st->codec->codec_id == AV_CODEC_ID_HEVC) {
+             int32_t cts = (avio_rb24(s->pb)+0xff800000)^0xff800000; // sign extension
+             pts = dts + cts;
+             if (cts < 0) { // dts are wrong
+diff --git a/libavformat/flvenc.c b/libavformat/flvenc.c
+index b0f8a41..6b5f800 100644
+--- a/libavformat/flvenc.c
++++ b/libavformat/flvenc.c
+@@ -40,6 +40,9 @@ static const AVCodecTag flv_video_codec_ids[] = {
+     { AV_CODEC_ID_VP6,      FLV_CODECID_VP6 },
+     { AV_CODEC_ID_VP6A,     FLV_CODECID_VP6A },
+     { AV_CODEC_ID_H264,     FLV_CODECID_H264 },
++    { AV_CODEC_ID_HEVC_HM91,FLV_CODECID_HEVC_HM91 },
++    { AV_CODEC_ID_HEVC_HM10,FLV_CODECID_HEVC_HM10 },
++    { AV_CODEC_ID_HEVC,     FLV_CODECID_HEVC },
+     { AV_CODEC_ID_NONE,     0 }
+ };
+ 
+@@ -179,6 +182,19 @@ static void put_avc_eos_tag(AVIOContext *pb, unsigned ts)
+     avio_wb32(pb, 16);              /* Size of FLV tag */
+ }
+ 
++static void put_hevc_eos_tag(int codec_id, AVIOContext *pb, unsigned ts)
++{
++    avio_w8(pb, FLV_TAG_TYPE_VIDEO);
++    avio_wb24(pb, 5);                   /* Tag Data Size */
++    avio_wb24(pb, ts);                  /* lower 24 bits of timestamp in ms */
++    avio_w8(pb, (ts >> 24) & 0x7F);     /* MSB of ts in ms */
++    avio_wb24(pb, 0);                   /* StreamId = 0 */
++    avio_w8(pb, 16 | (codec_id & 0x0F));/* ub[4] FrameType = 1, ub[4] CodecId = 7 */
++    avio_w8(pb, 2);                     /* HEVC end of sequence */
++    avio_wb24(pb, 0);                   /* Always 0 for AVC EOS. */
++    avio_wb32(pb, 16);                  /* Size of FLV tag */
++}
++
+ static void put_amf_double(AVIOContext *pb, double d)
+ {
+     avio_w8(pb, AMF_DATA_TYPE_NUMBER);
+@@ -191,12 +207,75 @@ static void put_amf_bool(AVIOContext *pb, int b)
+     avio_w8(pb, !!b);
+ }
+ 
++static int strongene_write_hevc_avcc(AVIOContext *pb, const uint8_t *data, int len)
++{
++    if (len > 6) {
++        /* check for h264 start code */
++        if (AV_RB32(data) == 0x00000001 ||
++            AV_RB24(data) == 0x000001) {
++            uint8_t *buf=NULL, *end, *start;
++            uint32_t vps_size=0, sps_size=0, pps_size=0;
++            uint8_t *vps=0, *sps=0, *pps=0;
++
++            int ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
++            if (ret < 0)
++                return ret;
++            start = buf;
++            end = buf + len;
++
++            /* look for sps and pps */
++            while (end - buf > 4) {
++                uint32_t size;
++                uint8_t nal_type;
++                size = FFMIN(AV_RB32(buf), end - buf - 4);
++                buf += 4;
++                nal_type = (buf[0] & 0x7e) >> 1;
++
++                if (nal_type == 32) { /* VPS */
++                    vps = buf;
++                    vps_size = size;
++                } else if (nal_type == 33) { /* SPS */
++                    sps = buf;
++                    sps_size = size;
++                } else if (nal_type == 34) { /* PPS */
++                    pps = buf;
++                    pps_size = size;
++                }
++
++                buf += size;
++            }
++
++            if (!vps || !sps || !pps || vps_size > UINT16_MAX || sps_size > UINT16_MAX || pps_size > UINT16_MAX)
++                return AVERROR_INVALIDDATA;
++
++            avio_w8(pb, 1); /* version */
++            avio_w8(pb, 0); /* profile */
++            avio_w8(pb, 0); /* profile compat */
++            avio_w8(pb, 0); /* level */
++            avio_w8(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
++            avio_w8(pb, 0xe2); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
++
++            avio_wb16(pb, vps_size);
++            avio_write(pb, vps, vps_size);
++            avio_wb16(pb, sps_size);
++            avio_write(pb, sps, sps_size);
++            avio_w8(pb, 1); /* number of pps */
++            avio_wb16(pb, pps_size);
++            avio_write(pb, pps, pps_size);
++            av_free(start);
++        } else {
++            avio_write(pb, data, len);
++        }
++    }
++    return 0;
++}
++
+ static int flv_write_header(AVFormatContext *s)
+ {
+     AVIOContext *pb = s->pb;
+     FLVContext *flv = s->priv_data;
+     AVCodecContext *audio_enc = NULL, *video_enc = NULL, *data_enc = NULL;
+-    int i, metadata_count = 0;
++    int i, is_lent, metadata_count = 0;
+     double framerate = 0.0;
+     int64_t metadata_size_pos, data_size, metadata_count_pos;
+     AVDictionaryEntry *tag = NULL;
+@@ -288,12 +367,19 @@ static int flv_write_header(AVFormatContext *s)
+     avio_w8(pb, AMF_DATA_TYPE_STRING);
+     put_amf_string(pb, "onMetaData"); // 12 bytes
+ 
++    /* use Strongene Lentoid HEVC encoder ? */
++    is_lent = video_enc &&
++	    ( video_enc->codec_id == AV_CODEC_ID_HEVC ||
++	      video_enc->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++	      video_enc->codec_id == AV_CODEC_ID_HEVC_HM91 );
++
+     /* mixed array (hash) with size and string/type/data tuples */
+     avio_w8(pb, AMF_DATA_TYPE_MIXEDARRAY);
+     metadata_count_pos = avio_tell(pb);
+     metadata_count = 5 * !!video_enc +
+                      5 * !!audio_enc +
+                      1 * !!data_enc  +
++                     2 * !!is_lent +
+                      2; // +2 for duration and file size
+ 
+     avio_wb32(pb, metadata_count);
+@@ -304,6 +390,18 @@ static int flv_write_header(AVFormatContext *s)
+     // fill in the guessed duration, it'll be corrected later if incorrect
+     put_amf_double(pb, s->duration / AV_TIME_BASE);
+ 
++    // Strongene Lentoid Encoder information
++    if ( is_lent ) {
++	    // Format
++	    put_amf_string(pb, "Video Encoder");
++	    avio_w8(pb, AMF_DATA_TYPE_STRING);
++	    put_amf_string(pb, "Strongene Lentoid HEVC/H.265 Encoder");
++	    // Format/Info
++	    put_amf_string(pb, "Video Encoder Website");
++	    avio_w8(pb, AMF_DATA_TYPE_STRING);
++	    put_amf_string(pb, "www.strongene.com");
++    }
++
+     if (video_enc) {
+         put_amf_string(pb, "width");
+         put_amf_double(pb, video_enc->width);
+@@ -386,7 +484,8 @@ static int flv_write_header(AVFormatContext *s)
+ 
+     for (i = 0; i < s->nb_streams; i++) {
+         AVCodecContext *enc = s->streams[i]->codec;
+-        if (enc->codec_id == AV_CODEC_ID_AAC || enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4) {
++        if (enc->codec_id == AV_CODEC_ID_AAC || enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4 ||
++	    enc->codec_id == AV_CODEC_ID_HEVC || enc->codec_id == AV_CODEC_ID_HEVC_HM10 || enc->codec_id == AV_CODEC_ID_HEVC_HM91) {
+             int64_t pos;
+             avio_w8(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO ?
+                     FLV_TAG_TYPE_VIDEO : FLV_TAG_TYPE_AUDIO);
+@@ -403,7 +502,13 @@ static int flv_write_header(AVFormatContext *s)
+                 avio_w8(pb, enc->codec_tag | FLV_FRAME_KEY); // flags
+                 avio_w8(pb, 0); // AVC sequence header
+                 avio_wb24(pb, 0); // composition time
+-                ff_isom_write_avcc(pb, enc->extradata, enc->extradata_size);
++		if (enc->codec_id == AV_CODEC_ID_HEVC ||
++		    enc->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++		    enc->codec_id == AV_CODEC_ID_HEVC_HM91) {
++			strongene_write_hevc_avcc(pb, enc->extradata, enc->extradata_size);
++		} else {
++			ff_isom_write_avcc(pb, enc->extradata, enc->extradata_size);
++		}
+             }
+             data_size = avio_tell(pb) - pos;
+             avio_seek(pb, -data_size - 10, SEEK_CUR);
+@@ -429,8 +534,15 @@ static int flv_write_trailer(AVFormatContext *s)
+         AVCodecContext *enc = s->streams[i]->codec;
+         FLVStreamContext *sc = s->streams[i]->priv_data;
+         if (enc->codec_type == AVMEDIA_TYPE_VIDEO &&
+-                (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4))
++	    (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4))
+             put_avc_eos_tag(pb, sc->last_ts);
++        if ( enc->codec_id == AV_CODEC_ID_HEVC || enc->codec_id == AV_CODEC_ID_HEVC_HM10
++             || enc->codec_id == AV_CODEC_ID_HEVC_HM91 ) {
++            int flv_codec_id = (enc->codec_id==AV_CODEC_ID_HEVC_HM91) ? FLV_CODECID_HEVC_HM91 :
++			       (enc->codec_id==AV_CODEC_ID_HEVC_HM10) ? FLV_CODECID_HEVC_HM10 :
++			       FLV_CODECID_HEVC;
++            put_hevc_eos_tag(flv_codec_id, pb, sc->last_ts);
++	}
+     }
+ 
+     file_size = avio_tell(pb);
+@@ -463,7 +575,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
+     if (enc->codec_id == AV_CODEC_ID_VP6 || enc->codec_id == AV_CODEC_ID_VP6F ||
+         enc->codec_id == AV_CODEC_ID_VP6A || enc->codec_id == AV_CODEC_ID_AAC)
+         flags_size = 2;
+-    else if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4)
++    else if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4 ||
++	     enc->codec_id == AV_CODEC_ID_HEVC || enc->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++	     enc->codec_id == AV_CODEC_ID_HEVC_HM91)
+         flags_size = 5;
+     else
+         flags_size = 1;
+@@ -496,7 +610,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
+         return AVERROR(EINVAL);
+     }
+ 
+-    if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4) {
++    if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4 ||
++	enc->codec_id == AV_CODEC_ID_HEVC || enc->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++	enc->codec_id == AV_CODEC_ID_HEVC_HM91) {
+         /* check if extradata looks like mp4 formated */
+         if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1)
+             if ((ret = ff_avc_parse_nal_units_buf(pkt->data, &data, &size)) < 0)
+@@ -567,7 +683,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
+             avio_w8(pb, enc->extradata_size ? enc->extradata[0] : 0);
+         else if (enc->codec_id == AV_CODEC_ID_AAC)
+             avio_w8(pb,1); // AAC raw
+-        else if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4) {
++        else if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4 ||
++		 enc->codec_id == AV_CODEC_ID_HEVC || enc->codec_id == AV_CODEC_ID_HEVC_HM10 ||
++		 enc->codec_id == AV_CODEC_ID_HEVC_HM91) {
+             avio_w8(pb,1); // AVC NALU
+             avio_wb24(pb,pkt->pts - pkt->dts);
+         }
+diff --git a/libavformat/hls.c b/libavformat/hls.c
+index 355f1a6..9791bc6 100644
+--- a/libavformat/hls.c
++++ b/libavformat/hls.c
+@@ -101,6 +101,7 @@ typedef struct HLSContext {
+     int first_packet;
+     int64_t first_timestamp;
+     int64_t seek_timestamp;
++    int seek_stream_index;
+     int seek_flags;
+     AVIOInterruptCB *interrupt_callback;
+     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
+@@ -610,6 +611,7 @@ static int hls_read_header(AVFormatContext *s)
+     c->first_packet = 1;
+     c->first_timestamp = AV_NOPTS_VALUE;
+     c->seek_timestamp  = AV_NOPTS_VALUE;
++    c->seek_stream_index = -1;
+ 
+     return 0;
+ fail:
+@@ -685,21 +687,24 @@ start:
+ 
+                 if (c->seek_timestamp == AV_NOPTS_VALUE)
+                     break;
+-
+-                if (var->pkt.dts == AV_NOPTS_VALUE) {
+-                    c->seek_timestamp = AV_NOPTS_VALUE;
+-                    break;
+-                }
+-
+-                st = var->ctx->streams[var->pkt.stream_index];
+-                ts_diff = av_rescale_rnd(var->pkt.dts, AV_TIME_BASE,
+-                                         st->time_base.den, AV_ROUND_DOWN) -
+-                          c->seek_timestamp;
+-                if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY ||
+-                                     var->pkt.flags & AV_PKT_FLAG_KEY)) {
+-                    c->seek_timestamp = AV_NOPTS_VALUE;
+-                    break;
+-                }
++                if ( c->seek_stream_index < 0 || c->seek_stream_index == var->pkt.stream_index ) {
++			if (var->pkt.dts == AV_NOPTS_VALUE) {
++				c->seek_timestamp = AV_NOPTS_VALUE;
++				break;
++			}
++
++			st = var->ctx->streams[var->pkt.stream_index];
++			ts_diff = av_rescale_rnd(var->pkt.dts, AV_TIME_BASE,
++						 st->time_base.den, AV_ROUND_DOWN) -
++				c->seek_timestamp;
++			if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY ||
++					     var->pkt.flags & AV_PKT_FLAG_KEY)) {
++				c->seek_timestamp = AV_NOPTS_VALUE;
++				break;
++			}
++		}
++		av_free_packet(&var->pkt);
++		reset_packet(&var->pkt);
+             }
+         }
+         /* Check if this stream has the packet with the lowest dts */
+@@ -758,6 +763,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
+                                        s->streams[stream_index]->time_base.den,
+                                        flags & AVSEEK_FLAG_BACKWARD ?
+                                        AV_ROUND_DOWN : AV_ROUND_UP);
++    c->seek_stream_index = stream_index;
+     timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
+                                s->streams[stream_index]->time_base.den :
+                                AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
+diff --git a/libavformat/mpegts.c b/libavformat/mpegts.c
+index 0fc16d1..6f05167 100644
+--- a/libavformat/mpegts.c
++++ b/libavformat/mpegts.c
+@@ -566,6 +566,7 @@ static const StreamType ISO_types[] = {
+     { 0x11, AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_AAC_LATM }, /* LATM syntax */
+ #endif
+     { 0x1b, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_H264 },
++    { 0x24, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_HEVC },
+     { 0x42, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_CAVS },
+     { 0xd1, AVMEDIA_TYPE_VIDEO,      AV_CODEC_ID_DIRAC },
+     { 0xea, AVMEDIA_TYPE_VIDEO,        AV_CODEC_ID_VC1 },
+diff --git a/libavformat/mpegts.h b/libavformat/mpegts.h
+index 269c23b..07e2876 100644
+--- a/libavformat/mpegts.h
++++ b/libavformat/mpegts.h
+@@ -52,6 +52,7 @@
+ #define STREAM_TYPE_AUDIO_AAC_LATM  0x11
+ #define STREAM_TYPE_VIDEO_MPEG4     0x10
+ #define STREAM_TYPE_VIDEO_H264      0x1b
++#define STREAM_TYPE_VIDEO_HEVC      0x24
+ #define STREAM_TYPE_VIDEO_CAVS      0x42
+ #define STREAM_TYPE_VIDEO_VC1       0xea
+ #define STREAM_TYPE_VIDEO_DIRAC     0xd1
+diff --git a/libavformat/mpegtsenc.c b/libavformat/mpegtsenc.c
+index e7c522c..0e2d908 100644
+--- a/libavformat/mpegtsenc.c
++++ b/libavformat/mpegtsenc.c
+@@ -289,6 +289,11 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
+         case AV_CODEC_ID_H264:
+             stream_type = STREAM_TYPE_VIDEO_H264;
+             break;
++        case AV_CODEC_ID_HEVC:
++        case AV_CODEC_ID_HEVC_HM91:
++        case AV_CODEC_ID_HEVC_HM10:
++            stream_type = STREAM_TYPE_VIDEO_HEVC;
++            break;
+         case AV_CODEC_ID_CAVS:
+             stream_type = STREAM_TYPE_VIDEO_CAVS;
+             break;
+@@ -1130,6 +1135,41 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
+             buf  = data;
+             size = pkt->size+6;
+         }
++    } else if (st->codec->codec_id == AV_CODEC_ID_HEVC 
++	       || st->codec->codec_id == AV_CODEC_ID_HEVC_HM91
++	       || st->codec->codec_id == AV_CODEC_ID_HEVC_HM10) {
++        const uint8_t *p = buf, *buf_end = p+size;
++        uint32_t state = -1, nal_type, first_slice_in_pic = 0;
++
++        if (pkt->size < 5 || (AV_RB32(pkt->data) != 0x0000001 && (AV_RB32(pkt->data)&0xFFFFFF00) != 0x00000100)) {
++            if (!st->nb_frames) {
++                av_log(s, AV_LOG_ERROR, "H.265/HEVC bitstream malformed, "
++                       "no startcode found, use the h264_mp4toannexb bitstream filter (-bsf h264_mp4toannexb)\n");
++                return AVERROR(EINVAL);
++            }
++            av_log(s, AV_LOG_WARNING, "H.265/HEVC bitstream error, startcode missing\n");
++        }
++
++        do {
++            p = avpriv_find_start_code(p, buf_end, &state);
++	    nal_type = (state & 0x7E) >> 1;
++	    if ( (p + 1) < buf_end && nal_type < 21 )
++                first_slice_in_pic = (p[1] & 0x80);
++            av_dlog(s, "nal %d\n", nal_type);
++        } while (p < buf_end && nal_type != 35 && !first_slice_in_pic);
++
++        if (nal_type != 35) { // AUD NAL
++            data = av_malloc(pkt->size+7);
++            if (!data)
++                return AVERROR(ENOMEM);
++            memcpy(data+7, pkt->data, pkt->size);
++            AV_WB32(data, 0x00000001);
++            data[4] = (35 << 1);
++	    data[5] = 0x01; // layer_id and temporal_id_plus1
++            data[6] = 0xa0; // any slice type (0x2) + rbsp stop one bit
++            buf  = data;
++            size = pkt->size+7;
++        }
+     } else if (st->codec->codec_id == AV_CODEC_ID_AAC) {
+         if (pkt->size < 2) {
+             av_log(s, AV_LOG_ERROR, "AAC packet too short\n");
+diff --git a/libavformat/sconcatdec.c b/libavformat/sconcatdec.c
+new file mode 100644
+index 0000000..5269be8
+--- /dev/null
++++ b/libavformat/sconcatdec.c
+@@ -0,0 +1,361 @@
++/*
++ * Copyright (c) 2013 Strongene Inc.
++ *
++ * Stream concatenate demuxer
++ *
++ * This file is from ffconcat(ffmpeg/libavformat/concatdec.c), modify
++ * by James.DF<dengjianfeng@strongene.com> for stream concatenate
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public License
++ * as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public License
++ * along with FFmpeg; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include "libavutil/avassert.h"
++#include "libavutil/avstring.h"
++#include "libavutil/opt.h"
++#include "libavutil/parseutils.h"
++#include "libavutil/timestamp.h"
++#include "avformat.h"
++#include "internal.h"
++#include "url.h"
++
++#define MAX_STREAMS 64
++
++typedef struct {
++    char *url;
++    int64_t ts_offset; /* first packet timestamp offset in original input file */
++		       /* in AV_TIME_BASE fractional seconds */
++    int64_t start_pts[MAX_STREAMS];
++    int64_t delta[MAX_STREAMS];
++    int64_t frame_duration[MAX_STREAMS];
++} ConcatFile;
++
++typedef struct {
++    AVClass *class;
++    ConcatFile *files;
++    ConcatFile *cur_file;
++    unsigned nb_files;
++    AVFormatContext *avf;
++    int safe;
++    int64_t next_pts[MAX_STREAMS];
++} StreamConcatContext;
++
++static int sconcat_probe(AVProbeData *probe)
++{
++    return memcmp(probe->buf, "ffsconcat version 1.0", 21) ?
++           0 : AVPROBE_SCORE_MAX;
++}
++
++static char *get_keyword(uint8_t **cursor)
++{
++    char *ret = *cursor += strspn(*cursor, SPACE_CHARS);
++    *cursor += strcspn(*cursor, SPACE_CHARS);
++    if (**cursor) {
++        *((*cursor)++) = 0;
++        *cursor += strspn(*cursor, SPACE_CHARS);
++    }
++    return ret;
++}
++
++static int safe_filename(const char *f)
++{
++    const char *start = f;
++
++    for (; *f; f++) {
++        /* A-Za-z0-9_- */
++        if (!((unsigned)((*f | 32) - 'a') < 26 ||
++              (unsigned)(*f - '0') < 10 || *f == '_' || *f == '-')) {
++            if (f == start)
++                return 0;
++            else if (*f == '/')
++                start = f + 1;
++            else if (*f != '.')
++                return 0;
++        }
++    }
++    return 1;
++}
++
++#define FAIL(retcode) do { ret = (retcode); goto fail; } while(0)
++
++static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
++                    unsigned *nb_files_alloc)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    ConcatFile *file;
++    char *url = NULL;
++    size_t url_len;
++    int ret;
++
++    if (cat->safe > 0 && !safe_filename(filename)) {
++        av_log(avf, AV_LOG_ERROR, "Unsafe file name '%s'\n", filename);
++        FAIL(AVERROR(EPERM));
++    }
++    url_len = strlen(avf->filename) + strlen(filename) + 16;
++    if (!(url = av_malloc(url_len)))
++        FAIL(AVERROR(ENOMEM));
++    ff_make_absolute_url(url, url_len, avf->filename, filename);
++    av_freep(&filename);
++
++    if (cat->nb_files >= *nb_files_alloc) {
++        size_t n = FFMAX(*nb_files_alloc * 2, 16);
++        ConcatFile *new_files;
++        if (n <= cat->nb_files || n > SIZE_MAX / sizeof(*cat->files) ||
++            !(new_files = av_realloc(cat->files, n * sizeof(*cat->files))))
++            FAIL(AVERROR(ENOMEM));
++        cat->files = new_files;
++        *nb_files_alloc = n;
++    }
++
++    file = &cat->files[cat->nb_files++];
++    memset(file, 0, sizeof(*file));
++    *rfile = file;
++
++    file->url = url;
++    file->ts_offset = AV_NOPTS_VALUE;
++
++    return 0;
++
++fail:
++    av_free(url);
++    av_free(filename);
++    return ret;
++}
++
++static int open_file(AVFormatContext *avf, unsigned fileno)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    ConcatFile *file = &cat->files[fileno];
++    AVStream *src_st;
++    int ret, i;
++
++    if (cat->avf)
++        avformat_close_input(&cat->avf);
++    if ((ret = avformat_open_input(&cat->avf, file->url, NULL, NULL)) < 0 ||
++        (ret = avformat_find_stream_info(cat->avf, NULL)) < 0) {
++        av_log(avf, AV_LOG_ERROR, "Impossible to open '%s'\n", file->url);
++        return ret;
++    }
++    av_assert0( cat->avf->nb_streams < MAX_STREAMS );
++    for (i = 0; i < cat->avf->nb_streams; i++) {
++	src_st = cat->avf->streams[i];
++	file->start_pts[i] = cat->next_pts[i];
++	if ( AV_NOPTS_VALUE != file->ts_offset )
++		file->start_pts[i] = av_rescale_q(file->ts_offset, AV_TIME_BASE_Q, src_st->time_base);
++	file->delta[i] = file->start_pts[i] - ((src_st->start_time!=AV_NOPTS_VALUE) ? src_st->start_time : 0);
++	file->frame_duration[i] = 0;
++        if ( src_st->r_frame_rate.den != 0 )
++            file->frame_duration[i] = av_rescale_q(1, av_inv_q(src_st->r_frame_rate), src_st->time_base);
++	if ( file->frame_duration[i] == 0 && src_st->avg_frame_rate.den != 0 )
++            file->frame_duration[i] = av_rescale_q(1, av_inv_q(src_st->avg_frame_rate), src_st->time_base);
++        if ( file->frame_duration[i] == 0 )
++            file->frame_duration[i] = av_rescale_q(40000, AV_TIME_BASE_Q, src_st->time_base);/* default duration is 40ms */
++    }
++    cat->cur_file = file;
++    return 0;
++}
++
++static int sconcat_read_close(AVFormatContext *avf)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    unsigned i;
++
++    if (cat->avf)
++        avformat_close_input(&cat->avf);
++    for (i = 0; i < cat->nb_files; i++)
++        av_freep(&cat->files[i].url);
++    av_freep(&cat->files);
++    return 0;
++}
++
++static int sconcat_read_header(AVFormatContext *avf)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    uint8_t buf[4096];
++    uint8_t *cursor, *keyword;
++    int ret, line = 0, i;
++    unsigned nb_files_alloc = 0;
++    ConcatFile *file = NULL;
++    AVStream *st, *source_st;
++
++    while (1) {
++        if ((ret = ff_get_line(avf->pb, buf, sizeof(buf))) <= 0)
++            break;
++        line++;
++        cursor = buf;
++        keyword = get_keyword(&cursor);
++        if (!*keyword || *keyword == '#')
++            continue;
++
++        if (!strcmp(keyword, "file")) {
++            char *filename = av_get_token((const char **)&cursor, SPACE_CHARS);
++            if (!filename) {
++                av_log(avf, AV_LOG_ERROR, "Line %d: filename required\n", line);
++                FAIL(AVERROR_INVALIDDATA);
++            }
++            if ((ret = add_file(avf, filename, &file, &nb_files_alloc)) < 0)
++                FAIL(ret);
++        } else if (!strcmp(keyword, "offset")) {
++            char *offset_str = get_keyword(&cursor);
++            int64_t offset;
++            if (!file) {
++                av_log(avf, AV_LOG_ERROR, "Line %d: offset without file\n",
++                       line);
++                FAIL(AVERROR_INVALIDDATA);
++            }
++            if ((ret = av_parse_time(&offset, offset_str, 1)) < 0) {
++                av_log(avf, AV_LOG_ERROR, "Line %d: invalid offset '%s'\n",
++                       line, offset_str);
++                FAIL(ret);
++            }
++            file->ts_offset = offset;
++        } else if (!strcmp(keyword, "ffsconcat")) {
++            char *ver_kw  = get_keyword(&cursor);
++            char *ver_val = get_keyword(&cursor);
++            if (strcmp(ver_kw, "version") || strcmp(ver_val, "1.0")) {
++                av_log(avf, AV_LOG_ERROR, "Line %d: invalid version\n", line);
++                FAIL(AVERROR_INVALIDDATA);
++            }
++            if (cat->safe < 0)
++                cat->safe = 1;
++        } else {
++            av_log(avf, AV_LOG_ERROR, "Line %d: unknown keyword '%s'\n",
++                   line, keyword);
++            FAIL(AVERROR_INVALIDDATA);
++        }
++    }
++    if (ret < 0)
++        FAIL(ret);
++    if (!cat->nb_files)
++        FAIL(AVERROR_INVALIDDATA);
++
++    if ((ret = open_file(avf, 0)) < 0)
++        FAIL(ret);
++    for (i = 0; i < cat->avf->nb_streams; i++) {
++        if (!(st = avformat_new_stream(avf, NULL)))
++            FAIL(AVERROR(ENOMEM));
++        source_st = cat->avf->streams[i];
++        if ((ret = avcodec_copy_context(st->codec, source_st->codec)) < 0)
++            FAIL(ret);
++        st->r_frame_rate        = source_st->r_frame_rate;
++        st->avg_frame_rate      = source_st->avg_frame_rate;
++        st->time_base           = source_st->time_base;
++        st->sample_aspect_ratio = source_st->sample_aspect_ratio;
++    }
++
++    memset(cat->next_pts, 0, sizeof(cat->next_pts));
++
++    return 0;
++
++fail:
++    sconcat_read_close(avf);
++    return ret;
++}
++
++static int open_next_file(AVFormatContext *avf)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    unsigned fileno = cat->cur_file - cat->files;
++
++    if (++fileno >= cat->nb_files)
++        return AVERROR_EOF;
++    return open_file(avf, fileno);
++}
++
++static int64_t get_next_file_ts_offset(AVFormatContext *avf)
++{
++    StreamConcatContext *cat = avf->priv_data;
++    unsigned fileno = cat->cur_file - cat->files;
++    if (++fileno >= cat->nb_files)
++        return AV_NOPTS_VALUE;
++    return cat->cur_file[1].ts_offset;
++}
++
++static int sconcat_read_packet(AVFormatContext *avf, AVPacket *pkt)
++{
++	StreamConcatContext *cat = avf->priv_data;
++	AVStream *src_st;
++	int ret, st_idx;
++	int64_t delta, next_pts, next_file_ts_offset, frame_duration;
++
++	while ( 1 ) {
++		while (1) {
++			if ((ret = av_read_frame(cat->avf, pkt)) != AVERROR_EOF ||
++			    (ret = open_next_file(avf)) < 0)
++				break;
++		}
++		if ( ret < 0 )
++			return ret;
++
++		st_idx = pkt->stream_index;
++		src_st = cat->avf->streams[st_idx];
++		av_assert0( st_idx < cat->avf->nb_streams );
++		av_assert0( st_idx < MAX_STREAMS );
++		delta = cat->cur_file->delta[st_idx];
++		if (pkt->pts != AV_NOPTS_VALUE) {
++			pkt->pts += delta;
++			next_file_ts_offset = get_next_file_ts_offset(avf);
++			if ( AV_NOPTS_VALUE != next_file_ts_offset )
++				next_file_ts_offset = av_rescale_q(next_file_ts_offset, AV_TIME_BASE_Q, 
++								   src_st->time_base);
++			if ( AV_NOPTS_VALUE != next_file_ts_offset &&
++			     pkt->pts >= next_file_ts_offset ) {
++				av_log(avf, AV_LOG_VERBOSE,
++				       "overlapped packet at %s, next file start at %s\n",
++				       av_ts2timestr(pkt->pts, &src_st->time_base), 
++				       av_ts2timestr(next_file_ts_offset, &src_st->time_base));
++				// continue;
++			}
++			frame_duration = (pkt->duration != 0) ?
++				pkt->duration : cat->cur_file->frame_duration[st_idx];
++			next_pts = pkt->pts + frame_duration;
++			if ( next_pts > cat->next_pts[st_idx] )
++				cat->next_pts[st_idx] = next_pts;
++		}
++		if (pkt->dts != AV_NOPTS_VALUE)
++			pkt->dts += delta;
++		break;
++	}
++	return ret;
++}
++
++
++#define OFFSET(x) offsetof(StreamConcatContext, x)
++#define DEC AV_OPT_FLAG_DECODING_PARAM
++
++static const AVOption options[] = {
++    { "safe", "enable safe mode",
++      OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
++    { NULL }
++};
++
++static const AVClass sconcat_class = {
++    .class_name = "sconcat demuxer",
++    .item_name  = av_default_item_name,
++    .option     = options,
++    .version    = LIBAVUTIL_VERSION_INT,
++};
++
++
++AVInputFormat ff_sconcat_demuxer = {
++    .name           = "sconcat",
++    .long_name      = NULL_IF_CONFIG_SMALL("Virtual stream concatenation script"),
++    .priv_data_size = sizeof(StreamConcatContext),
++    .read_probe     = sconcat_probe,
++    .read_header    = sconcat_read_header,
++    .read_packet    = sconcat_read_packet,
++    .read_close     = sconcat_read_close,
++    .read_seek2     = NULL,
++    .priv_class     = &sconcat_class,
++};
