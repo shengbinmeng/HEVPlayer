@@ -43,6 +43,7 @@ public class LocalExploreActivity extends ListActivity {
 	private String			mCurrentDir = mRoot;
 	private TextView 		mTextViewLocation;
 	private File[]			mFiles;
+	private AlertDialog 	mDialog;
 	
 	static String[] exts = {".avi",".mp4",".m4v",".mkv",".mp3",".flv",".rm",".rmvb",".wmv",".wma",".3gp",".mov",".mpg",".asf", ".ts"};
     
@@ -111,7 +112,6 @@ public class LocalExploreActivity extends ListActivity {
 	            }
 
 				public boolean accept(File file) {
-					// TODO Auto-generated method stub
 					if (!showHidden && file.getName().startsWith(".")) return false;
 					else if (file.isDirectory()) return true;
 					else if (showMediaOnly && !isMedia(file.getName())) return false;
@@ -283,7 +283,7 @@ public class LocalExploreActivity extends ListActivity {
 					}
 	        	};
 	        	
-	        	new AlertDialog.Builder(this)
+	        	mDialog = new AlertDialog.Builder(this)
 	        	.setTitle("Input URL:")
 	        	.setIcon(android.R.drawable.ic_input_get)
 	        	.setView(urlEdit)
@@ -309,6 +309,15 @@ public class LocalExploreActivity extends ListActivity {
 	    	//restart activity to apply the setting changes
             this.finish();
             startActivity(new Intent(this, this.getClass()));
+        }
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mDialog != null) {
+            mDialog.dismiss();
+            mDialog = null;
         }
     }
      
