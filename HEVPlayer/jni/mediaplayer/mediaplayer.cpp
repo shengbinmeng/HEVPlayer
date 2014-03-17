@@ -88,6 +88,7 @@ MediaPlayer::MediaPlayer() {
 
 	//initialize ffmpeg
 	av_register_all();
+	avformat_network_init();
 	av_log_set_callback(ffmpeg_log_callback);
 	av_init_packet(&mFlushPacket);
 	mFlushPacket.data = (uint8_t*) "FLUSH";
@@ -108,6 +109,7 @@ MediaPlayer::MediaPlayer() {
 MediaPlayer::~MediaPlayer() {
 	pthread_mutex_destroy(&mLock);
 	pthread_cond_destroy(&mCondition);
+	avformat_network_deinit();
 }
 
 int MediaPlayer::prepareAudio() {
@@ -570,7 +572,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 void* MediaPlayer::startDecoding(void* ptr) {
 	sPlayer->decodeMedia(ptr);
-	detachJVM();
+	//detachJVM();
 	return NULL;
 }
 
