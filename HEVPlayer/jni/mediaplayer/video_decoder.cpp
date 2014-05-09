@@ -32,6 +32,7 @@ int VideoDecoder::process(AVPacket *packet) {
 	//LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
 
 	if (gotFrame) {
+		mFrame->pts = av_frame_get_best_effort_timestamp(mFrame);
 		if (mFrame->pts != AV_NOPTS_VALUE) {
 			mVideoClock = av_q2d(mStream->codec->time_base) * mFrame->pts;
 		} else {
