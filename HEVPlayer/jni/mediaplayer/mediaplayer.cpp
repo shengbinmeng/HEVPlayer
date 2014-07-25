@@ -35,7 +35,7 @@ extern "C" {
 
 #define MAX_AP_QUEUE_SIZE (2 * 128)
 #define MAX_VP_QUEUE_SIZE (2 * 128)
-#define MAX_FRAME_QUEUE_SIZE 60
+#define MAX_FRAME_QUEUE_SIZE 14
 #define TIMEOUT_MS 5000
 
 static MediaPlayer* sPlayer;
@@ -131,10 +131,10 @@ int MediaPlayer::prepareAudio() {
 	// get a pointer to the codec context for the video stream
 	AVStream* stream = mFormatContext->streams[mAudioStreamIndex];
 	AVCodecContext* codec_ctx = stream->codec;
-	LOGD("audio codec id: %d \n", codec_ctx->codec_id);
+	LOGI("audio codec id: %d \n", codec_ctx->codec_id);
 	char buffer[128];
 	av_get_sample_fmt_string(buffer, 128, codec_ctx->sample_fmt);
-	LOGD("sample rate: %d, format: %d (%s) \n", codec_ctx->sample_rate, codec_ctx->sample_fmt, buffer);
+	LOGI("sample rate: %d, format: %d (%s) \n", codec_ctx->sample_rate, codec_ctx->sample_fmt, buffer);
 
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id ? codec_ctx->codec_id : CODEC_ID_MP3);
 	if (codec == NULL) {
@@ -170,11 +170,14 @@ int MediaPlayer::prepareVideo() {
 	// get a pointer to the codec context of the video stream
 	AVStream* stream = mFormatContext->streams[mVideoStreamIndex];
 	AVCodecContext* codec_ctx = stream->codec;
-	LOGD("video codec id: %d \n", codec_ctx->codec_id);
-	LOGD("frame rate and time base: %d/%d = %f, %d/%d = %f \n", stream->r_frame_rate.num, stream->r_frame_rate.den, (float)stream->r_frame_rate.num / stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float)stream->time_base.num / stream->time_base.den);
+	LOGI("video codec id: %d \n", codec_ctx->codec_id);
+	LOGI("frame rate and time base: %d/%d = %f, %d/%d = %f \n", stream->r_frame_rate.num, stream->r_frame_rate.den, (float)stream->r_frame_rate.num / stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float)stream->time_base.num / stream->time_base.den);
 
 	// find and open video decoder
+	AVCodec* lenthevc_dec = avcodec_find_decoder_by_name("liblenthevc");
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id);
+    if(codec->id == lenthevc_dec->id)
+    	codec = lenthevc_dec;
 	if (codec == NULL) {
 		LOGE("find video decoder failed \n");
 		return -1;
@@ -192,12 +195,15 @@ int MediaPlayer::prepareVideo() {
 
 	mVideoWidth = codec_ctx->width;
 	mVideoHeight = codec_ctx->height;
-	LOGD("width: %d, height: %d \n", codec_ctx->width, codec_ctx->height);
+	LOGI("width: %d, height: %d \n", codec_ctx->width, codec_ctx->height);
 
 	return 0;
 }
 
 int MediaPlayer::open(char* file) {
+	AVCodec * temp_codec = NULL;
+	AVCodec * codec = NULL;
+
 	if (mCurrentState < MEDIA_PLAYER_INITIALIZED) {
 		LOGE("not initialized \n");
 		return -1;
@@ -214,6 +220,29 @@ int MediaPlayer::open(char* file) {
 	}
 
 	// retrieve stream information
+
+	if( mFormatContext->streams[AVMEDIA_TYPE_VIDEO] )
+	{
+		temp_codec = avcodec_find_decoder_by_name("liblenthevc");
+		codec = avcodec_find_decoder(mFormatContext->streams[AVMEDIA_TYPE_VIDEO]->codec->codec_id);
+		//LOGI("codecId %d = %d",codec->id,temp_codec->id);
+		if(codec == NULL || codec->id == temp_codec->id)
+			mFormatContext->streams[AVMEDIA_TYPE_VIDEO]->codec->codec = temp_codec;
+	}
+
+
+	/*
+	if (temp_codec == NULL) {
+		LOGE("find video decoder failed \n");
+		return -1;
+	}
+
+	if (avcodec_open2(mFormatContext->streams[AVMEDIA_TYPE_VIDEO]->codec, temp_codec, NULL) < 0) {
+		LOGE("open video decoder failed \n");
+		return -1;
+	}
+	*/
+
 	if (avformat_find_stream_info(mFormatContext, NULL) < 0) {
 		LOGE("av_find_stream_info failed \n");
 		return -1;
@@ -412,6 +441,10 @@ void MediaPlayer::renderVideo(void* ptr) {
 }
 
 void MediaPlayer::decodeMedia(void* ptr) {
+
+	av_seek_frame(mFormatContext, mAudioStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
+	av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
+
 	if (mAudioStreamIndex != -1) {
 		AVStream* stream_audio = mFormatContext->streams[mAudioStreamIndex];
 		mAudioDecoder = new AudioDecoder(stream_audio);
@@ -427,6 +460,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 	AVPacket p, *packet = &p;
 	LOGI("begin parsing...\n");
+
 	while (mCurrentState != MEDIA_PLAYER_STOPPED && mCurrentState != MEDIA_PLAYER_STATE_ERROR) {
 
 		// seek
