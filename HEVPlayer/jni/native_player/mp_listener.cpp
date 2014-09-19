@@ -53,8 +53,7 @@ MediaPlayerListener::MediaPlayerListener() {
 	}
 
     // hold onto the MediaPlayer class for use in calling the static method
-    //gClass = clazz;
-	gClass = (jclass)env->NewGlobalRef(clazz);
+    gClass = clazz;
     gEnvLocal = gEnvLocal2 = NULL;
     gByteArray = NULL;
     gShortArray = NULL;
@@ -85,7 +84,7 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) 
 		gDataArraySize = size;
 	}
 	gEnvLocal->SetShortArrayRegion(gShortArray, 0, size, (jshort*)data);
-	LOGI("write to audio track: %d shorts \n", size);
+	LOGD("write to audio track: %d shorts \n", size);
 	return gEnvLocal->CallStaticIntMethod(gClass, gFields.audioTrackWrite, gShortArray, offset, size);
 }
 
