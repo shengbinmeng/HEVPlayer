@@ -1,15 +1,21 @@
 package pku.shengbin.hevplayer;
 
 import pku.shengbin.utils.MessageBox;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.MediaController;
@@ -129,6 +135,31 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		
+		View decorView = getWindow().getDecorView();
+		decorView.setOnSystemUiVisibilityChangeListener
+		        (new View.OnSystemUiVisibilityChangeListener() {
+		    @Override
+		    public void onSystemUiVisibilityChange(int visibility) {
+		        // Note that system bars will only be "visible" if none of the
+		        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
+		        if ((visibility & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == 0) {
+		            // The system bars are visible
+		        	mMediaController.show(300000);
+		        	//GLPlayActivity.this.getActionBar().show();
+					getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+					
+					// The system bar becoming visible may have eaten the touch event, so we need a reset here.
+		        	resetTimer();
+		        } else {
+		            // The system bars are NOT visible
+					mMediaController.hide();
+		        	//GLPlayActivity.this.getActionBar().hide();
+					getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+							WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		        }
+		    }
+		});
 
 		mGLSurfaceView = new GLPlayView(this.getApplication());
 		mGLSurfaceView.getHolder().addCallback(this);
@@ -169,13 +200,14 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 		}
 	}
 
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 	@Override
 	/**
 	 * Handles user touch, mainly pinch to zoom.
 	 */
 	public boolean onTouchEvent(android.view.MotionEvent event) {
 
-		if (event.getPointerCount() == 2) {
+		if (event.getPointerCount() == 8) {
 			if (mStartTwoTouchPoint == false) {
 				mStartDistance = getDistance(event.getX(0), event.getY(0),
 						event.getX(1), event.getY(1));
@@ -195,16 +227,70 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 		} else {
 			mStartTwoTouchPoint = false;
 			if (event.getPointerCount() == 1
-					&& event.getY() > this.getResources().getDisplayMetrics().heightPixels * 0.2) {
-				if (mMediaController != null)
-					if (mMediaController.isShowing() == false) {
-						mMediaController.show(3000);
+					&& event.getAction() == MotionEvent.ACTION_DOWN && event.getAction() != MotionEvent.ACTION_POINTER_DOWN) {
+				if (mMediaController != null) {
+					if (mMediaController.isShowing()) {
+			        	mMediaController.hide();
+						if (Build.VERSION.SDK_INT >= 16) {
+							View decorView = getWindow().getDecorView();
+							int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+							decorView.setSystemUiVisibility(uiOptions);
+						}
+					} else {
+			        	mMediaController.show(300000);
 					}
+				}
+				
+	        	resetTimer();
 			}
 		}
 		return true;
 	}
 
+	public static final long TIMEUP_PERIOD = 5000; // 3000 ms
+
+    private Handler timeupHandler = new Handler(){
+        public void handleMessage(Message msg) {
+        }
+    };
+
+    private Runnable timeupCallback = new Runnable() {
+        @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+		@Override
+        public void run() {
+            // Perform any required operation
+        	if (mMediaController != null) {
+	        	mMediaController.hide();
+				if (Build.VERSION.SDK_INT >= 16) {
+					View decorView = getWindow().getDecorView();
+					int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+					decorView.setSystemUiVisibility(uiOptions);
+				}
+			}
+        }
+    };
+
+    public void resetTimer() {
+        timeupHandler.removeCallbacks(timeupCallback);
+        timeupHandler.postDelayed(timeupCallback, TIMEUP_PERIOD);
+    }
+
+    public void stopTimer() {
+        timeupHandler.removeCallbacks(timeupCallback);
+    }
+	
+	@Override
+    public void onResume() {
+        super.onResume();
+        resetTimer();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        stopTimer();
+    }
+	
 	// Menu item Ids
 	public static final int MENU1 = Menu.FIRST;
 	public static final int MENU2 = Menu.FIRST + 1;
@@ -260,6 +346,7 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 		mMediaController.setMediaPlayer(this);
 		mMediaController.setAnchorView(mGLSurfaceView);
 		mMediaController.setEnabled(true);
+    	mMediaController.show(300000);
 	}
 
 	private void setDisplaySizeVideo() {
