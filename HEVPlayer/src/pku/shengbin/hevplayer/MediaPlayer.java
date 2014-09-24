@@ -106,7 +106,10 @@ public class MediaPlayer {
     	getAudioParams(params);
     	if (params[0] > 0) {
     		int sampleRate = params[0];
-    		int channelConfig = (params[1] == 1) ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO;
+    		int channelConfig = (params[1] == 1) ? AudioFormat.CHANNEL_OUT_MONO : 
+    			((params[1] == 2) ? AudioFormat.CHANNEL_OUT_STEREO :
+    				((params[1] == 4) ?AudioFormat.CHANNEL_OUT_QUAD:
+    					((params[1] == 6) ?AudioFormat.CHANNEL_OUT_5POINT1 : AudioFormat.CHANNEL_OUT_7POINT1)));
     		int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
     		int bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat);
         	mAudioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, sampleRate, channelConfig, audioFormat, bufferSize, AudioTrack.MODE_STREAM);
