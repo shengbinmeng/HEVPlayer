@@ -373,7 +373,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		mFrameLastPTS = vf->pts;
 
 		double diff = 0;
-		if (mAudioStreamIndex != -1) {
+		if (mAudioClock != 0) {
 			double ref_clock = mAudioClock + delay;
 			diff = vf->pts - ref_clock;
 			LOGD("diff: %lf - %lf = %lf (%lld)", vf->pts, ref_clock, diff, (int64_t)(diff * 1000));
@@ -387,6 +387,9 @@ void MediaPlayer::renderVideo(void* ptr) {
 
 		sListener->drawFrame(vf);
 
+		if (mAudioClock == 0) {
+			mCurrentPosition += vf->pts * 1000;
+		}
 		// update information
 		struct timeval timeNow;
 		gettimeofday(&timeNow, NULL);
