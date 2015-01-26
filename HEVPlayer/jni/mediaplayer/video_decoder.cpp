@@ -13,7 +13,7 @@ VideoDecoder::~VideoDecoder() {
 
 int VideoDecoder::prepare() {
 	mVideoClock = 0;
-	mFrame = avcodec_alloc_frame();
+	mFrame = av_frame_alloc();
 	if (mFrame == NULL) {
 		LOGE("avcodec_alloc_frame failed \n");
 		return -1;
@@ -76,7 +76,7 @@ int VideoDecoder::decode(void* ptr) {
 	}
 
 	// free the frame
-	avcodec_free_frame(&mFrame);
+	av_frame_free(&mFrame);
 	LOGI("end of video decoding \n");
 	return 0;
 }

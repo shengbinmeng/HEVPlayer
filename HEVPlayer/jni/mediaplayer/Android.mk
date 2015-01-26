@@ -5,7 +5,7 @@ LOCAL_PATH := $(call my-dir)
 #
 include $(CLEAR_VARS)
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../lenthevcdec/include/ $(LOCAL_PATH)/../ffmpeg-2.0/include/ $(LOCAL_PATH)/../native_player/
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../lenthevcdec/include/ $(LOCAL_PATH)/../ffmpeg/include/ $(LOCAL_PATH)/../native_player/
 
 LOCAL_SRC_FILES := audio_decoder.cpp video_decoder.cpp decoder.cpp framequeue.cpp \
 					packetqueue.cpp thread.cpp mediaplayer.cpp

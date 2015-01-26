@@ -20,7 +20,7 @@ AudioDecoder::~AudioDecoder() {
 int AudioDecoder::prepare() {
     mAudioClock = 0;
     mAudioPts = 0;
-    mFrame = avcodec_alloc_frame();
+    mFrame = av_frame_alloc();
 	if (mFrame == NULL) {
 		LOGE("avcodec_alloc_frame failed \n");
 		return -1;
@@ -115,7 +115,7 @@ int AudioDecoder::decode(void* ptr) {
     }
 
 	// free the frame
-	avcodec_free_frame(&mFrame);
+	av_frame_free(&mFrame);
 	free(mSamples);
 	if (mSwrContext != NULL) {
 		swr_free(&mSwrContext);
