@@ -45,7 +45,7 @@ public class LocalExploreActivity extends ListActivity {
 	private File[]			mFiles;
 	private AlertDialog 	mDialog;
 	
-	static String[] exts = {".avi",".mp4",".m4v",".mkv",".mp3",".flv",".rm",".rmvb",".wmv",".wma",".3gp",".mov",".mpg",".asf", ".ts"};
+	static String[] exts = {".3gp", ".asf", ".avi", ".flv", ".m4v", ".mkv", ".mov", ".mp4", ".mpg", ".mpeg", ".rm", ".rmvb", ".ts", ".wmv", ".mp3", ".wma"};
     
     @Override
 	protected void onCreate(Bundle savedInstanceState) {

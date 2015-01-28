@@ -4,6 +4,7 @@ import pku.shengbin.utils.MessageBox;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
@@ -180,8 +181,16 @@ public class GLPlayActivity extends Activity implements SurfaceHolder.Callback,
 		mError = 0;
 		mPlayer = new MediaPlayer(this);
 
-		moviePath = this.getIntent().getStringExtra(
+		Intent intent = getIntent();
+	    String action = intent.getAction();
+	    if (action != null) {
+	    	if (action.contentEquals(Intent.ACTION_VIEW)) {
+	    		moviePath = intent.getData().toString();
+	    	}
+	    } else {
+			moviePath = intent.getStringExtra(
 				"pku.shengbin.hevplayer.strMediaPath");
+		}
 		mPlayer.setDisplay(mGLSurfaceView, textView);
 
 		int ret = mPlayer.open(moviePath);
