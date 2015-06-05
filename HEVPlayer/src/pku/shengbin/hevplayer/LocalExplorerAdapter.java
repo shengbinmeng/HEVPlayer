@@ -6,7 +6,6 @@ import pku.shengbin.hevplayer.LocalExploreActivity;
 import pku.shengbin.hevplayer.R;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,26 +46,21 @@ public class LocalExplorerAdapter extends BaseAdapter {
 	private void setRow(ViewHolder holder, int position) {
 		File file = mFiles[position];
 		holder.text.setText(file.getName());
-		if(position == 0 && mHasParrent) {
+		if (position == 0 && mHasParrent) {
 			holder.icon.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_menu_back));
 			holder.text.setText("< Parent Directory > ");
-		} 
-		else if (file.isDirectory()) {
+		} else if (file.isDirectory()) {
 			holder.icon.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_menu_archive));
-		} 
-		else {
-			Drawable d = null;
-			if(LocalExploreActivity.checkExtension(file)) {
-				d = mContext.getResources().getDrawable(R.drawable.ic_menu_gallery);
-			}
-			else {
-				d = mContext.getResources().getDrawable(R.drawable.ic_menu_block);
-			}
-			holder.icon.setImageDrawable(d);
-			Bitmap bitmap = null;
-			bitmap = createVideoThumbnail(file.getPath());
-			if (bitmap != null) {
-				holder.icon.setImageBitmap(bitmap);
+		} else {
+			if (LocalExploreActivity.checkExtension(file)) {
+				Bitmap bitmap = createVideoThumbnail(file.getPath());
+				if (bitmap != null) {
+					holder.icon.setImageBitmap(bitmap);
+				} else {
+					holder.icon.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_menu_gallery));
+				}
+			} else {
+				holder.icon.setImageDrawable(mContext.getResources().getDrawable(R.drawable.ic_menu_block));
 			}
 		}
 	}
@@ -80,7 +74,7 @@ public class LocalExplorerAdapter extends BaseAdapter {
         // to re-inflate it. We only inflate a new View when the convertView supplied
         // by ListView is null.
         if (convertView == null) {
-            convertView = mInflater.inflate(R.layout.movie_explorer_row, null);
+            convertView = mInflater.inflate(R.layout.movie_explorer_row, parent, false);
 
             // Creates a ViewHolder and store references to the two children views
             // we want to bind data to.
@@ -105,6 +99,7 @@ public class LocalExplorerAdapter extends BaseAdapter {
 	    TextView text;
 	    ImageView icon;
 	}
+	
     private Bitmap createVideoThumbnail(String filePath) {
         Bitmap bitmap = null;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();

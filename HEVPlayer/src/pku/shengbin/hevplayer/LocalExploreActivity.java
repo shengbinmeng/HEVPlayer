@@ -39,34 +39,35 @@ import android.widget.TextView;
  */
 public class LocalExploreActivity extends ListActivity {
 	
-	private String 			mRoot = Environment.getExternalStorageDirectory().getPath();
-	private String			mCurrentDir = mRoot;
+	private String 			mRootDir = "/";
+	private String			mCurrentDir;
 	private TextView 		mTextViewLocation;
 	private File[]			mFiles;
 	private AlertDialog 	mDialog;
 	
 	static String[] exts = {".3gp", ".asf", ".avi", ".flv", ".m4v", ".mkv", ".mov", ".mp4", ".mpg", ".mpeg", ".rm", ".rmvb", ".ts", ".wmv", ".mp3", ".wma"};
-    
+
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.movie_explorer);
 		mTextViewLocation = (TextView) findViewById(R.id.textview_path);
-		
+				
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(LocalExploreActivity.this);  
 		String currentDir = prefs.getString("current_dir", "");
 		if (currentDir.isEmpty()) {
-			getDirectory(mRoot);
-		} else {
-			getDirectory(currentDir);
+			currentDir = mRootDir;
+			try {
+				String state = Environment.getExternalStorageState();
+				if (state.equals(Environment.MEDIA_MOUNTED) || state.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
+					currentDir = Environment.getExternalStorageDirectory().getPath();
+				}
+			} catch (Exception ex) {
+				MessageBox.show(this, "Sorry", "Get sdcard directory failed! Please check your SD card state.");
+			}
 		}
-		
-		File frameCache = new File(mRoot + "/.hevplayer");
-		if( !frameCache.exists() )
-		{
-			frameCache.mkdir();
-		}
+		getDirectory(currentDir);
 	}
    
 	
@@ -125,7 +126,7 @@ public class LocalExploreActivity extends ListActivity {
 			sortFiles(temp);
 			
 			File[] files = null;
-			if (!dirPath.equals(mRoot)) {
+			if (!dirPath.equals(mRootDir)) {
 				files = new File[temp.length + 1];
 				System.arraycopy(temp, 0, files, 1, temp.length);
 				files[0] = new File(f.getParent());
@@ -134,7 +135,7 @@ public class LocalExploreActivity extends ListActivity {
 			}
 			
 			mFiles = files;
-			setListAdapter(new LocalExplorerAdapter(this, files, dirPath.equals(mRoot)));
+			setListAdapter(new LocalExplorerAdapter(this, files, dirPath.equals(mRootDir)));
 			
 		} catch (Exception ex) {
 			MessageBox.show(this, "Sorry", "Get directory failed! Please check your SD card state.");
@@ -180,7 +181,7 @@ public class LocalExploreActivity extends ListActivity {
     public boolean onKeyDown(int keyCode, KeyEvent event) {  	
         if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
             // do something on back
-        	if (mCurrentDir.equals(mRoot)) {
+        	if (mCurrentDir.equals(mRootDir)) {
         		new AlertDialog.Builder(this)
             	.setMessage("The application will exit. Are you sure?")
             	.setPositiveButton("Conform", new OnClickListener() {
