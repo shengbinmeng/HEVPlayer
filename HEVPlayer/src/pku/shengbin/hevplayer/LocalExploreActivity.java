@@ -253,7 +253,7 @@ public class LocalExploreActivity extends ListActivity {
 						String input = urlEdit.getText().toString();
 						try {
 							if (input.startsWith("rtsp://") || input.startsWith("http://") 
-									|| input.startsWith("rtp://")) {
+									|| input.startsWith("rtp://") || input.startsWith("ftp://")) {
 								File file = new File(Environment.getExternalStorageDirectory().getPath() + "/.hevplayer/history.txt");
 								if (!file.exists()) {
 									new File(Environment.getExternalStorageDirectory().getPath() + "/.hevplayer").mkdir();
@@ -274,18 +274,18 @@ public class LocalExploreActivity extends ListActivity {
 					            fos.close();
 							}
 							else {
-								MessageBox.show(LocalExploreActivity.this, "Tip","Invalid Input! Only support: 'rtsp://', 'http://', and 'rtp://'.");
+								MessageBox.show(LocalExploreActivity.this, "Tip", "Invalid input! Should start with: 'rtsp://', 'http://', 'rtp://', and 'ftp://'.");
 							}
 
 						} catch (Exception e) {
-							MessageBox.show(LocalExploreActivity.this, "Error","File operation failed:  " + e.getMessage());
+							MessageBox.show(LocalExploreActivity.this, "Error", "File operation failed:  " + e.getMessage());
 						}
 								
 					}
 	        	};
 	        	
 	        	mDialog = new AlertDialog.Builder(this)
-	        	.setTitle("Input URL:")
+	        	.setTitle("Input location of a movie file to open and play it:")
 	        	.setIcon(android.R.drawable.ic_input_get)
 	        	.setView(urlEdit)
 	        	.setPositiveButton("OK", ok_listener)
