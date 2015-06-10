@@ -3,13 +3,12 @@
 #
 # change these variables according to your system
 #
-SYSROOT=$ANDROID_NDK/platforms/android-9/arch-arm
-TOOLCHAIN=$ANDROID_NDK/toolchains/arm-linux-androideabi-4.8/prebuilt/darwin-x86_64
+SYSROOT=$ANDROID_NDK_HOME/platforms/android-9/arch-arm
+TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/arm-linux-androideabi-4.8/prebuilt/linux-x86
 PREFIX=./android/arm
+LIBLENTOID=`pwd`/../liblenthevcdec
 
-#
-# read the configure help carefully before you want to change the following options
-#
+echo $LIBLENTOID
 ./configure \
     --prefix=$PREFIX \
     --target-os=linux \
@@ -18,8 +17,8 @@ PREFIX=./android/arm
     --enable-cross-compile \
     --cross-prefix=$TOOLCHAIN/bin/arm-linux-androideabi- \
     --sysroot=$SYSROOT \
-    --extra-cflags="-O2 -Ithirdparty/arm -fPIC -march=armv7-a -mfpu=neon -mfloat-abi=softfp" \
-    --extra-ldflags="-Lthirdparty/arm " \
+    --extra-cflags="-I$LIBLENTOID/arm -O2 -fPIC -march=armv7-a -mfpu=neon -mfloat-abi=softfp" \
+    --extra-ldflags="-L$LIBLENTOID/arm " \
     --enable-gpl \
     --enable-version3 \
     --enable-nonfree \
