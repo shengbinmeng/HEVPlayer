@@ -11,12 +11,13 @@
 Notice: the folder hierarchy should be like this:
 	| ffmpeg source codes
 		| config_android_*.sh
-	| liblenthevcdec
-		| arm
+	| lenthevcdec
+		| include
 			| lenthevcdec.h
-			| liblenthevcdec.so
-		| x86
-			| lenthevcdec.h
-			| liblenthevcdec.so
+		| lib
+			| armeabi-v7a
+				| liblenthevcdec.so
+			| x86
+				| liblenthevcdec.so
 	
 (by: Shengbin Meng & Yingming Fan, 2015-06-10)
