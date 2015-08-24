@@ -33,6 +33,8 @@ extern "C" {
 
 #define LOG_TAG "MediaPlayer"
 
+#define USE_LENTHEVCDEC 1
+
 #define MAX_AP_QUEUE_SIZE (2 * 128)
 #define MAX_VP_QUEUE_SIZE (2 * 128)
 #define MAX_FRAME_QUEUE_SIZE 14
@@ -174,11 +176,14 @@ int MediaPlayer::prepareVideo() {
 	LOGI("frame rate and time base: %d/%d = %f, %d/%d = %f \n", stream->r_frame_rate.num, stream->r_frame_rate.den, (float)stream->r_frame_rate.num / stream->r_frame_rate.den, stream->time_base.num, stream->time_base.den, (float)stream->time_base.num / stream->time_base.den);
 
 	// find and open video decoder
-	AVCodec* lenthevc_dec = avcodec_find_decoder_by_name("liblenthevc");
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id);
+#if USE_LENTHEVCDEC
+	AVCodec* lenthevc_dec = avcodec_find_decoder_by_name("liblenthevc");
 	if (codec->id == lenthevc_dec->id) {
 		codec = lenthevc_dec;
 	}
+	LOGI("use lenthevcdec for HEVC decoding \n");
+#endif
 	if (codec == NULL) {
 		LOGE("find video decoder failed \n");
 		return -1;
