@@ -52,12 +52,15 @@ MediaPlayerListener::MediaPlayerListener() {
 		return;
 	}
 
-    // hold onto the MediaPlayer class for use in calling the static method
-    gClass = clazz;
-    gEnvLocal = gEnvLocal2 = NULL;
-    gByteArray = NULL;
-    gShortArray = NULL;
-    gDataArraySize = 0;
+	// Since Android ICS, class references are not global so we need to peg a
+	// global reference to the jclass returned by FindClass(), otherwise we get
+	// following error in the log:
+	// "JNI ERROR (app bug): attempt to use stale local reference 0xHHHHHHHH".
+	gClass = static_cast<jclass>(env->NewGlobalRef(clazz));
+	gEnvLocal = gEnvLocal2 = NULL;
+	gByteArray = NULL;
+	gShortArray = NULL;
+	gDataArraySize = 0;
 	gVF = NULL;
 	pthread_mutex_init(&gVFMutex, NULL);
 }
