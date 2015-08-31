@@ -29,14 +29,19 @@ int VideoDecoder::process(AVPacket *packet) {
 		LOGE("decode video packet failed \n");
 	}
 
-	//LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
+	LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld; codec time base: %lf, stream time base: %lf",
+			packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts, av_q2d(mStream->codec->time_base), av_q2d(mStream->time_base));
 
 	if (gotFrame) {
 		mFrame->pts = av_frame_get_best_effort_timestamp(mFrame);
 		if (mFrame->pts != AV_NOPTS_VALUE) {
-			mVideoClock = av_q2d(mStream->codec->time_base) * mFrame->pts;
+			// Time stamp is meaningful, so we use it.
+			mVideoClock = av_q2d(mStream->time_base) * mFrame->pts;
+			LOGD("best effort frame pts: %lld", mFrame->pts);
 		} else {
+			// Actually I don't know what to do.
 			mVideoClock += av_q2d(mStream->codec->time_base);
+			LOGD("time stamp is AV_NOPTS_VALUE: %lld", mFrame->pts);
 		}
 
 		/* if we are repeating a frame, adjust clock accordingly */
