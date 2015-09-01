@@ -21,6 +21,4 @@ int jniRegisterNativeMethods(JNIEnv* env, const char* className, const JNINative
 JNIEnv* getJNIEnv();
 void detachJVM();
 
-uint32_t getms();
-
 #endif /* __JNI_UTILS_H__ */

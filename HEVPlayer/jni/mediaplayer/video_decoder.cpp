@@ -83,5 +83,8 @@ int VideoDecoder::decode(void* ptr) {
 	// free the frame
 	av_frame_free(&mFrame);
 	LOGI("end of video decoding \n");
+
+	// send NULL to indicate ending.
+	onDecoded(NULL, -1);
 	return 0;
 }

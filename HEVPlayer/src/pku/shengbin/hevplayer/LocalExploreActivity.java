@@ -253,7 +253,7 @@ public class LocalExploreActivity extends ListActivity {
 						String input = urlEdit.getText().toString();
 						try {
 							if (input.startsWith("rtsp://") || input.startsWith("http://") 
-									|| input.startsWith("rtp://") || input.startsWith("ftp://")) {
+									|| input.startsWith("rtp://") || input.startsWith("ftp://") || input.startsWith("rtmp://")) {
 								File file = new File(Environment.getExternalStorageDirectory().getPath() + "/.hevplayer/history.txt");
 								if (!file.exists()) {
 									new File(Environment.getExternalStorageDirectory().getPath() + "/.hevplayer").mkdir();

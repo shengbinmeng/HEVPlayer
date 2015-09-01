@@ -17,11 +17,7 @@
 // copyright notice and this list of conditions in the documentation
 // and/or other materials provided with the distribution.
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include "mediaplayer.h"
 
 extern "C" {
@@ -181,8 +177,8 @@ int MediaPlayer::prepareVideo() {
 	AVCodec* lenthevc_dec = avcodec_find_decoder_by_name("liblenthevc");
 	if (codec->id == lenthevc_dec->id) {
 		codec = lenthevc_dec;
+		LOGI("use lenthevcdec for HEVC decoding \n");
 	}
-	LOGI("use lenthevcdec for HEVC decoding \n");
 #endif
 	if (codec == NULL) {
 		LOGE("find video decoder failed \n");
@@ -223,15 +219,16 @@ int MediaPlayer::open(char* file) {
 	}
 
 	// retrieve stream information
+#if USE_LENTHEVCDEC
+	// for HEVC video, we should use lenthevc decoder to find stream info
 	if (mFormatContext->streams[AVMEDIA_TYPE_VIDEO]) {
-		// for HEVC video, we should use lenthevc decoder to find stream info
 		AVCodec* lenthevc_dec = avcodec_find_decoder_by_name("liblenthevc");
 		AVCodec* codec = avcodec_find_decoder(mFormatContext->streams[AVMEDIA_TYPE_VIDEO]->codec->codec_id);
-		if(codec == NULL || codec->id == lenthevc_dec->id) {
+		if (codec == NULL || codec->id == lenthevc_dec->id) {
 			mFormatContext->streams[AVMEDIA_TYPE_VIDEO]->codec->codec = lenthevc_dec;
 		}
 	}
-
+#endif
 	if (avformat_find_stream_info(mFormatContext, NULL) < 0) {
 		LOGE("av_find_stream_info failed \n");
 		return -1;
@@ -308,7 +305,9 @@ void MediaPlayer::audioOutput(void* buffer, int buffer_size) {
 
 // handler for receiving decoded video frames
 void MediaPlayer::videoOutput(AVFrame* frame, double pts) {
-
+	if (frame == NULL) {
+		return;
+	}
 	// allocate a video frame, copy data to it, and put it in the frame queue
 	VideoFrame *vf = (VideoFrame*) malloc(sizeof(VideoFrame));
 	if (vf == NULL) {
@@ -428,7 +427,8 @@ void MediaPlayer::renderVideo(void* ptr) {
 		LOGE("join decoding thread failed \n");
 	}
 	LOGI("end of rendering thread \n");
-
+	// send NULL to indicate ending.
+	sListener->drawFrame(NULL);
 	mCurrentState = MEDIA_PLAYER_PLAYBACK_COMPLETE;
 }
 
@@ -521,8 +521,9 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			continue;
 		}
 
+		LOGD("before read frame\n");
 		int ret = av_read_frame(mFormatContext, packet);
-
+		LOGD("after read frame\n");
 		if (ret < 0) {
 			LOGE("av_read_frame failed, end of file\n");
 
@@ -598,15 +599,11 @@ void MediaPlayer::decodeMedia(void* ptr) {
 
 void* MediaPlayer::startDecoding(void* ptr) {
 	sPlayer->decodeMedia(ptr);
-	//detachJVM();
 	return NULL;
 }
 
 void* MediaPlayer::startRendering(void* ptr) {
 	sPlayer->renderVideo(ptr);
-	// tell the play activity to finish
-	sListener->postEvent(909, 0, 0);
-	detachJVM();
 	return NULL;
 }
 

@@ -76,7 +76,11 @@ void MediaPlayerListener::postEvent(int msg, int ext1, int ext2) {
 
 int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) {
 	if (data == NULL) {
-		return -1;
+		if (gEnvLocal != NULL) {
+			detachJVM();
+			gEnvLocal = NULL;
+		}
+		return 1;
 	}
 	if (gEnvLocal == NULL) {
 		gEnvLocal = getJNIEnv();
@@ -92,6 +96,15 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) 
 }
 
 int MediaPlayerListener::drawFrame(VideoFrame *vf) {
+	if (vf == NULL) {
+		// tell the play activity to finish
+		postEvent(909, 0, 0);
+		if (gEnvLocal2 != NULL) {
+			detachJVM();
+			gEnvLocal2 = NULL;
+		}
+		return 1;
+	}
 	pthread_mutex_lock(&gVFMutex);
 	if (gVF != NULL) {
 		free(gVF->yuv_data[0]);

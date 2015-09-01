@@ -123,6 +123,7 @@ int AudioDecoder::decode(void* ptr) {
 
 	LOGI("end of audio decoding \n");
 
-	detachJVM();
+	// send NULL to indicate ending.
+	onDecoded(NULL, -1);
 	return 0;
 }
