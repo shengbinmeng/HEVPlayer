@@ -132,8 +132,7 @@ int MediaPlayer::prepareAudio() {
 	LOGI("audio codec id: %d \n", codec_ctx->codec_id);
 	char buffer[128];
 	av_get_sample_fmt_string(buffer, 128, codec_ctx->sample_fmt);
-	LOGI("sample rate: %d, format: %d (%s) \n", codec_ctx->sample_rate, codec_ctx->sample_fmt, buffer);
-
+	LOGI("sample rate: %d, format: %d (%s), channels: %d \n", codec_ctx->sample_rate, codec_ctx->sample_fmt, buffer, codec_ctx->channels);
 	AVCodec* codec = avcodec_find_decoder(codec_ctx->codec_id ? codec_ctx->codec_id : CODEC_ID_MP3);
 	if (codec == NULL) {
 		LOGE("find audio decoder failed \n");
@@ -380,11 +379,11 @@ void MediaPlayer::renderVideo(void* ptr) {
 		if (mAudioClock != 0) {
 			double ref_clock = mAudioClock + delay;
 			diff = vf->pts - ref_clock;
-			LOGD("diff: %lf - %lf = %lf (%lld)", vf->pts, ref_clock, diff, (int64_t)(diff * 1000));
+			LOGD("diff: %lf - %lf = %lf (%lld) \n", vf->pts, ref_clock, diff, (int64_t)(diff * 1000));
 		}
 
 		delay += diff;
-		LOGD("delay: %lf (%lld)", delay, (int64_t)(delay*1000));
+		LOGD("delay: %lf (%lld) \n", delay, (int64_t)(delay*1000));
 		if (delay > 0 && delay < 10) {
 			usleep(delay*1000000);
 		}
@@ -403,7 +402,7 @@ void MediaPlayer::renderVideo(void* ptr) {
 		if (tnow > mTimeLast + 1) {
 			mFrameCount += mFrames;
 			double avg_fps = mFrameCount / (tnow - mTimeStart);
-			LOGI("Video Display FPS: %d, average: %.2lf", mFrames, avg_fps);
+			LOGI("Video Display FPS: %d, average: %.2lf \n", mFrames, avg_fps);
 			sListener->postEvent(900, mFrames, int(avg_fps * 4096));
 			mTimeLast = mTimeLast + 1;
 			mFrames = 0;
@@ -521,9 +520,8 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			continue;
 		}
 
-		LOGD("before read frame\n");
 		int ret = av_read_frame(mFormatContext, packet);
-		LOGD("after read frame\n");
+
 		if (ret < 0) {
 			LOGE("av_read_frame failed, end of file\n");
 

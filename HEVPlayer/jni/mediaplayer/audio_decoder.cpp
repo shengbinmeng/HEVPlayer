@@ -41,7 +41,7 @@ int AudioDecoder::process(AVPacket *packet) {
 		LOGE("decode audio packet failed \n");
 	}
 
-	LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
+	LOGD("packet dts: %lld = %lld; packet pts: %lld = %lld; frame pts: %lld \n", packet->dts, mFrame->pkt_dts, packet->pts, mFrame->pkt_pts, mFrame->pts);
 
 	if (gotFrame) {
 		int size = av_samples_get_buffer_size(NULL, mFrame->channels,
@@ -55,7 +55,7 @@ int AudioDecoder::process(AVPacket *packet) {
 			mAudioClock += inc;
 		}
 
-		LOGD("output an audio frame, mAudioClock: %lf", mAudioClock);
+		LOGD("output an audio frame, mAudioClock: %lf \n", mAudioClock);
 
 		// conversion using swresample
 		if (mSwrContext == NULL) {

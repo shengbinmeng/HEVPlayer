@@ -22,9 +22,8 @@ static fields_t gFields;
 
 static jclass gClass;
 static JNIEnv *gEnvLocal, *gEnvLocal2;
-static jbyteArray gByteArray;
 static jshortArray gShortArray;
-static int gDataArraySize;
+static int gShortArrayLength;
 
 MediaPlayerListener::MediaPlayerListener() {
 	JNIEnv *env = getJNIEnv();
@@ -58,14 +57,26 @@ MediaPlayerListener::MediaPlayerListener() {
 	// "JNI ERROR (app bug): attempt to use stale local reference 0xHHHHHHHH".
 	gClass = static_cast<jclass>(env->NewGlobalRef(clazz));
 	gEnvLocal = gEnvLocal2 = NULL;
-	gByteArray = NULL;
 	gShortArray = NULL;
-	gDataArraySize = 0;
+	gShortArrayLength = 0;
 	gVF = NULL;
 	pthread_mutex_init(&gVFMutex, NULL);
 }
 
 MediaPlayerListener::~MediaPlayerListener() {
+	JNIEnv *env = getJNIEnv();
+	env->DeleteGlobalRef(gClass);
+
+	if (gVF != NULL) {
+		free(gVF->yuv_data[0]);
+		free(gVF);
+		gVF = NULL;
+	}
+
+	if (gShortArray != NULL) {
+		gEnvLocal->DeleteLocalRef(gShortArray);
+		gShortArray = NULL;
+	}
 
 }
 
@@ -86,9 +97,13 @@ int MediaPlayerListener::audioTrackWrite(void* data, int offset, int data_size) 
 		gEnvLocal = getJNIEnv();
 	}
 	int size = data_size / 2;
-	if (gShortArray == NULL || gDataArraySize < size) {
+	if (gShortArrayLength < size) {
+		if (gShortArray != NULL) {
+			gEnvLocal->DeleteLocalRef(gShortArray);
+			gShortArray = NULL;
+		}
 		gShortArray = gEnvLocal->NewShortArray(size);
-		gDataArraySize = size;
+		gShortArrayLength = size;
 	}
 	gEnvLocal->SetShortArrayRegion(gShortArray, 0, size, (jshort*)data);
 	LOGD("write to audio track: %d shorts \n", size);
