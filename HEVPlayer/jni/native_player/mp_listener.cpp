@@ -114,10 +114,8 @@ int MediaPlayerListener::drawFrame(VideoFrame *vf) {
 	if (vf == NULL) {
 		// tell the play activity to finish
 		postEvent(909, 0, 0);
-		if (gEnvLocal2 != NULL) {
-			detachJVM();
-			gEnvLocal2 = NULL;
-		}
+		// postEvent will attach the JVM, so we must detach it here.
+		detachJVM();
 		return 1;
 	}
 	pthread_mutex_lock(&gVFMutex);

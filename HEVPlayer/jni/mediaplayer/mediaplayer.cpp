@@ -123,6 +123,7 @@ int MediaPlayer::prepareAudio() {
 	}
 
 	if (mAudioStreamIndex == -1) {
+		LOGI("no audio stream \n");
 		return -1;
 	}
 
@@ -161,6 +162,7 @@ int MediaPlayer::prepareVideo() {
 		}
 	}
 	if (mVideoStreamIndex == -1) {
+		LOGI("no video stream \n");
 		return -1;
 	}
 
@@ -207,7 +209,7 @@ int MediaPlayer::open(char* file) {
 		return -1;
 	}
 
-	LOGI("opening \n");
+	LOGI("opening %s \n", file);
 
 	// open media file
 	mFormatContext = NULL;
@@ -242,6 +244,7 @@ int MediaPlayer::open(char* file) {
 	// if neither video or audio is prepared, return error
 	if (ret1 != 0 && ret2 != 0) {
 		mCurrentState = MEDIA_PLAYER_STATE_ERROR;
+		LOGE("prepare audio and video both failed \n");
 		return -1;
 	}
 
@@ -433,9 +436,6 @@ void MediaPlayer::renderVideo(void* ptr) {
 
 void MediaPlayer::decodeMedia(void* ptr) {
 
-	av_seek_frame(mFormatContext, mAudioStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
-	av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
-
 	if (mAudioStreamIndex != -1) {
 		AVStream* stream_audio = mFormatContext->streams[mAudioStreamIndex];
 		mAudioDecoder = new AudioDecoder(stream_audio);
@@ -544,15 +544,16 @@ void MediaPlayer::decodeMedia(void* ptr) {
 				}
 			}
 
+			pthread_mutex_lock(&mLock);
+			mCurrentState = MEDIA_PLAYER_PARSED;
+			pthread_mutex_unlock(&mLock);
+			// end the queues when all parsed
 			if (mAudioDecoder != NULL) {
 				mAudioDecoder->endQueue();
 			}
 			if (mVideoDecoder != NULL) {
 				mVideoDecoder->endQueue();
 			}
-			pthread_mutex_lock(&mLock);
-			mCurrentState = MEDIA_PLAYER_PARSED;
-			pthread_mutex_unlock(&mLock);
 			break;
 		}
 
@@ -565,9 +566,8 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			LOGD("enqueue an audio packet; queue size: %d \n", mAudioDecoder->queueSize());
 		} else {
 			LOGE("not video or audio packet \n");
-			pthread_mutex_lock(&mLock);
-			mCurrentState = MEDIA_PLAYER_STATE_ERROR;
-			pthread_mutex_unlock(&mLock);
+			// just ignore other kinds of packet for now
+			continue;
 		}
 	}
 
