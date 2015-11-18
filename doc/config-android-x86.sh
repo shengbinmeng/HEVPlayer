@@ -29,6 +29,7 @@ LENTHEVCDEC=./thirdparty/lenthevcdec
 	--enable-nonfree \
 	--disable-doc \
 	--disable-programs \
+	--disable-debug \
 	--enable-ffmpeg \
 	--disable-avdevice \
 	--disable-postproc \
