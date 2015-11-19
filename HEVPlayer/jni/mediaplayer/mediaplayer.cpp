@@ -436,6 +436,13 @@ void MediaPlayer::renderVideo(void* ptr) {
 }
 
 void MediaPlayer::decodeMedia(void* ptr) {
+	if (mFormatContext->filename[0] == '/') {
+		// When file name starts with '/', it's not a network location and we seek to 0 for more robust parsing.
+		// Without this seeking, av_read_frame will fail for local TS files. However, for live streams (e.g., rtmp) this seeking will cause problems.
+		// TODO: More analysis is needed to determine whether we should do this.
+		av_seek_frame(mFormatContext, mAudioStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
+		av_seek_frame(mFormatContext, mVideoStreamIndex, 0, AVSEEK_FLAG_BACKWARD);
+	}
 
 	if (mAudioStreamIndex != -1) {
 		AVStream* stream_audio = mFormatContext->streams[mAudioStreamIndex];
