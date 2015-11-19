@@ -26,7 +26,7 @@
 
 static MediaPlayer *gMP;
 
-static int MediaPlayer_open(JNIEnv *env, jobject thiz, jstring path, jint threadNum, jfloat loop) {
+static int MediaPlayer_open(JNIEnv *env, jobject thiz, jstring path, jint threadNum, jint loop) {
 	const char *pathStr = env->GetStringUTFChars(path, NULL);
 	int ret = gMP->open((char *)pathStr);
 	env->ReleaseStringUTFChars(path, pathStr);
@@ -123,7 +123,7 @@ static void native_init(JNIEnv *env, jobject thiz) {
 // ----------------------------------------------------------------------------
 
 static JNINativeMethod gMethods[] = {
-    {"native_open",               "(Ljava/lang/String;IF)I",          (void *)MediaPlayer_open},
+    {"native_open",               "(Ljava/lang/String;II)I",          (void *)MediaPlayer_open},
     {"native_close",              "()I",                              (void *)MediaPlayer_close},
     {"native_start",              "()I",                              (void *)MediaPlayer_start},
     {"native_stop",               "()I",                              (void *)MediaPlayer_stop},

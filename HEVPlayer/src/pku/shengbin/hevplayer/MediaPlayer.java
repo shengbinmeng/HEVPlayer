@@ -39,7 +39,7 @@ public class MediaPlayer {
     private static String mInfo = "";
     
     private native final void native_init();
-    private native int native_open(String path, int threadNum, float fps);
+    private native int native_open(String path, int threadNum, int loop);
     private native int native_start();
     private native int native_stop();
     private native int native_pause(); 
@@ -88,7 +88,7 @@ public class MediaPlayer {
 			Log.d("MediaPlayer", cores + " cores detected! use " + num + " threads.\n");
 		}
 		
-		float loop = 0;
+		int loop = 0;
 		if (settings.getBoolean("loop_play_switch", false)) {
 			loop = 1;
 		}
