@@ -18,6 +18,7 @@
 // and/or other materials provided with the distribution.
 
 #include <unistd.h>
+#include <sys/time.h>
 #include "mediaplayer.h"
 
 extern "C" {
