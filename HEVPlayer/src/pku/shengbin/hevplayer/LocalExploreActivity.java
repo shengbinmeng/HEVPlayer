@@ -73,7 +73,7 @@ public class LocalExploreActivity extends ListActivity {
 	
 	protected static boolean checkExtension(File file) {
 		for (int i = 0; i < exts.length; i++) {
-			if (file.getName().indexOf(exts[i]) > 0) {
+			if (file.getName().toLowerCase().indexOf(exts[i]) > 0) {
 				return true;
 			}
 		}
@@ -115,7 +115,7 @@ public class LocalExploreActivity extends ListActivity {
 				public boolean accept(File file) {
 					if (!showHidden && file.getName().startsWith(".")) return false;
 					else if (file.isDirectory()) return true;
-					else if (showMediaOnly && !isMedia(file.getName())) return false;
+					else if (showMediaOnly && !isMedia(file.getName().toLowerCase())) return false;
 					else return true;
 				}
 			}
