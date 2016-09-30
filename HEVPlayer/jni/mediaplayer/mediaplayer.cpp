@@ -523,7 +523,7 @@ void MediaPlayer::decodeMedia(void* ptr) {
 			aq_size = mAudioDecoder->queueSize();
 		}
 		if (vq_size > MAX_VP_QUEUE_SIZE || aq_size > MAX_AP_QUEUE_SIZE) {
-			LOGI("two many packets(v: %d, a: %d), have a rest \n", vq_size, aq_size);
+			LOGI("too many packets(v: %d, a: %d), have a rest \n", vq_size, aq_size);
 			sleep(1);
 			continue;
 		}
