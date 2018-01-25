@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen 
+	xmlns:android="http://schemas.android.com/apk/res/android" 
+	android:title="Settings">
+	<PreferenceCategory android:title="About" xmlns:android="http://schemas.android.com/apk/res/android">
+		<Preference android:title="About HEVPlayer" android:key="about_this_app"></Preference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="Local File List" xmlns:android="http://schemas.android.com/apk/res/android">
+		<CheckBoxPreference 
+			android:title="Show media files only" 
+			android:summaryOn="only media files listed"
+			android:summaryOff="all local files listed"
+			android:defaultValue="false" android:key="only_media_switch">
+		</CheckBoxPreference>
+		<CheckBoxPreference 
+			android:title="Show hidden files" 
+			android:summaryOn="hidden files listed"
+			android:summaryOff="hidden files not listed"
+			android:defaultValue="false" android:key="show_hidden_switch">
+		</CheckBoxPreference>
+	</PreferenceCategory>
+	<PreferenceCategory android:title="Playback" xmlns:android="http://schemas.android.com/apk/res/android">
+		<ListPreference
+			android:key="multi_thread"    
+			android:title="Decoder thread number"
+			android:summary="Set to multi-thread  decoding if your CPU has more cores (0 means auto)"
+			android:entries="@array/thread_number_options"    
+			android:entryValues="@array/thread_number_options"
+			android:dialogTitle="Select Thread Number:"    
+			android:defaultValue="0">
+		</ListPreference>
+		<CheckBoxPreference 
+			android:title="Loop play" 
+			android:summaryOn="Loop play ON"
+			android:summaryOff="Loop play OFF"
+			android:defaultValue="false" android:key="loop_play_switch">
+		</CheckBoxPreference>	
+	</PreferenceCategory>
+</PreferenceScreen>

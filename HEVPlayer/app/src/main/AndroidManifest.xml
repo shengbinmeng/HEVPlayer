@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="pku.shengbin.hevplayer"
+    android:versionCode="7"
+    android:versionName="1.6" >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="18" />
+    <uses-permission android:name="android.permission.INTERNET" ></uses-permission>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" ></uses-permission>
+	<uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" ></uses-permission>
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" ></uses-permission>
+	<uses-feature android:glEsVersion="0x00020000"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher_hevplayer"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="pku.shengbin.hevplayer.MainActivity"
+            android:label="@string/app_name" >
+        </activity>
+        <activity
+            android:name="pku.shengbin.hevplayer.LocalExploreActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="pku.shengbin.hevplayer.GLPlayActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+			    <action android:name="android.intent.action.VIEW" />
+			    <category android:name="android.intent.category.DEFAULT" />
+			    <category android:name="android.intent.category.BROWSABLE" />
+			    <data android:mimeType="video/*"  />
+			    <data android:mimeType="application/x-quicktimeplayer*" />
+			    <data android:mimeType="application/x-mpeg" />
+			    <data android:mimeType="application/vnd.dvd*" />
+			    <data android:mimeType="application/vnd.3gp*" />
+			    <data android:mimeType="application/3gpp*" />
+			    <data android:mimeType="application/vnd.rn-realmedia*" />
+			    <data android:mimeType="application/mp4*" />
+			    <data android:mimeType="application/mpeg*" />
+			    <data android:mimeType="application/sdp" />
+			    <data android:mimeType="application/vnd.wap.mms-message" />
+			    <data android:pathPattern=".*3gp" />
+			    <data android:pathPattern=".*3GP" />
+			    <data android:pathPattern=".*asf" />
+			    <data android:pathPattern=".*ASF" />
+			    <data android:pathPattern=".*avi" />
+			    <data android:pathPattern=".*AVI" />
+			    <data android:pathPattern=".*flv" />
+			    <data android:pathPattern=".*FLV" />				
+				<data android:pathPattern=".*m4v" />
+			    <data android:pathPattern=".*M4V" />
+				<data android:pathPattern=".*mkv" />
+			    <data android:pathPattern=".*MKV" />
+			    <data android:pathPattern=".*mov" />
+			    <data android:pathPattern=".*MOV" />			
+			    <data android:pathPattern=".*mp4" />
+			    <data android:pathPattern=".*MP4" />
+			    <data android:pathPattern=".*mpg" />
+			    <data android:pathPattern=".*MPG" />
+			    <data android:pathPattern=".*mpeg" />
+			    <data android:pathPattern=".*MPEG" />	    
+			    <data android:pathPattern=".*rm" />
+			    <data android:pathPattern=".*RM" />
+			    <data android:pathPattern=".*rmvb" />
+			    <data android:pathPattern=".*RMVB" />
+			    <data android:pathPattern=".*ts" />
+			    <data android:pathPattern=".*TS" />
+			    <data android:pathPattern=".*wmv" />
+			    <data android:pathPattern=".*WMV" />
+			    <data android:pathPattern=".*mp3" />
+			    <data android:pathPattern=".*MP3" />
+			    <data android:pathPattern=".*wma" />
+			    <data android:pathPattern=".*WMA" />
+			</intent-filter>
+        </activity>
+        <activity
+            android:name="pku.shengbin.hevplayer.SettingsActivity">
+        </activity>
+    </application>
+
+</manifest>
