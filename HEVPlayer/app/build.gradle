@@ -20,8 +20,9 @@ android {
             path 'src/main/jni/Android.mk'
         }
     }
+    ndkVersion '21.0.6113669'
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:18.0.0'
+    implementation 'com.android.support:support-v4:18.0.0'
 }

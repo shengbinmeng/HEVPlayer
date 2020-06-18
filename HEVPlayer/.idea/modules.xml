@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/HEVPlayer.iml" filepath="$PROJECT_DIR$/HEVPlayer.iml" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/HEVPlayer.iml" filepath="$PROJECT_DIR$/HEVPlayer.iml" group="HEVPlayer" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="HEVPlayer/app" />
     </modules>
   </component>
 </project>
